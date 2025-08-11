@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:health/components/CustomTextFormField.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({Key? key}) : super(key: key);
@@ -10,24 +11,28 @@ class SignUpPage extends StatefulWidget {
 }
 
 class _SignUpPageState extends State<SignUpPage> {
+  final _formKey = GlobalKey<FormState>(); // ✅ Add form key
+
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _nameController = TextEditingController();
   final _cprController = TextEditingController();
-  String _selectedGender = "Male";
+  String? _selectedGender = "";
 
   bool _isLoading = false;
   String? _errorMessage;
 
   Future<void> _signUp() async {
+    // ✅ Trigger validation first
+    if (!_formKey.currentState!.validate()) return;
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
     try {
-      // Create Firebase Auth account
       UserCredential userCred = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(
             email: _emailController.text.trim(),
@@ -36,7 +41,6 @@ class _SignUpPageState extends State<SignUpPage> {
 
       String uid = userCred.user!.uid;
 
-      // Create Firestore document in "users" collection
       await FirebaseFirestore.instance.collection("users").doc(uid).set({
         "id": uid,
         "name": _nameController.text.trim(),
@@ -63,79 +67,124 @@ class _SignUpPageState extends State<SignUpPage> {
       appBar: AppBar(title: const Text("Sign Up")),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            if (_errorMessage != null)
-              Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
+        child: Form(
+          key: _formKey, // ✅ Wrap with Form
+          child: Column(
+            children: [
+              if (_errorMessage != null)
+                Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
 
-            // Name
-            TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(labelText: "Full Name"),
-            ),
-            const SizedBox(height: 12),
+              CustomTextFormField(
+                controller: _nameController,
+                hintText: "Name",
+                maxLines: 1,
+                obscureText: false,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return "Please enter your name";
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
 
-            // CPR
-            TextField(
-              controller: _cprController,
-              decoration: const InputDecoration(labelText: "CPR"),
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 12),
-            // Gender dropdown
-            DropdownButtonFormField<String>(
-              value: _selectedGender,
-              items: ["Male", "Female"]
-                  .map(
-                    (gender) =>
-                        DropdownMenuItem(value: gender, child: Text(gender)),
-                  )
-                  .toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedGender = value!;
-                });
-              },
-              decoration: const InputDecoration(labelText: "Gender"),
-            ),
-            const SizedBox(height: 12),
+              CustomTextFormField(
+                controller: _cprController,
+                hintText: "CPR",
+                maxLines: 1,
+                obscureText: false,
+                digitsOnly: true,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return "Please enter your CPR";
+                  }
+                  if (value.length != 9) {
+                    return "CPR must be 9 digits";
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
 
-            // Email
-            TextField(
-              controller: _emailController,
-              decoration: const InputDecoration(labelText: "Email"),
-              keyboardType: TextInputType.emailAddress,
-            ),
-            const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: _selectedGender!.isEmpty ? null : _selectedGender,
+                items: ["Male", "Female"]
+                    .map(
+                      (gender) =>
+                          DropdownMenuItem(value: gender, child: Text(gender)),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedGender = value ?? "";
+                  });
+                },
+                decoration: const InputDecoration(labelText: "Gender"),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return "Please select a gender";
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
 
-            // Password
-            TextField(
-              controller: _passwordController,
-              decoration: const InputDecoration(labelText: "Password"),
-              obscureText: true,
-            ),
-            const SizedBox(height: 20),
-            // Password
-            TextField(
-              controller: _confirmPasswordController,
-              decoration: const InputDecoration(labelText: "ConfirmPassword"),
-              obscureText: true,
-            ),
-            const SizedBox(height: 20),
+              CustomTextFormField(
+                controller: _emailController,
+                hintText: "Email",
+                obscureText: false,
+                maxLines: 1,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return "Please enter an email";
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
 
-            _isLoading
-                ? const CircularProgressIndicator()
-                : ElevatedButton(
-                    onPressed: _signUp,
-                    child: const Text("Sign Up"),
-                  ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: const Text("Already have an account? Login"),
-            ),
-          ],
+              CustomTextFormField(
+                controller: _passwordController,
+                obscureText: true,
+                hintText: "Password",
+                maxLines: 1,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return "Please enter a password";
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 20),
+
+              CustomTextFormField(
+                controller: _confirmPasswordController,
+                obscureText: true,
+                hintText: "Confirm Password",
+                maxLines: 1,
+                validator: (value) {
+                  if (value != _passwordController.text) {
+                    return "Passwords do not match";
+                  }
+                  return null;
+                },
+              ),
+
+              const SizedBox(height: 20),
+              _isLoading
+                  ? const CircularProgressIndicator()
+                  : ElevatedButton(
+                      onPressed: _signUp,
+                      child: const Text("Sign Up"),
+                    ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pushReplacementNamed(context, 'login');
+                },
+                child: const Text("Already have an account? Login"),
+              ),
+            ],
+          ),
         ),
       ),
     );
