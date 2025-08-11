@@ -2,10 +2,14 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:health/firebase_options.dart';
 import 'views/splash_screen_views.dart';
+import 'package:health/home.dart';
+import 'package:health/login.dart';
+import 'package:health/signup.dart';
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  runApp(const MainApp());
+  runApp(MainApp());
 }
 
 class MainApp extends StatelessWidget {
@@ -14,7 +18,13 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: SplashScreenViews(),
+      initialRoute: 'login',
+      routes: {
+        'signup': (context) => SignUpPage(),
+        'login': (context) => const LoginPage(),
+        'home': (context) => const HomePage(),
+        'splash': (context) => const SplashScreenViews(),
+      },
     );
   }
-}
+} 
