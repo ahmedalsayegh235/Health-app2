@@ -1,23 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../controllers/auth_controller.dart';
-import '../../components/CustomTextFormField.dart';
+import '../../controllers/animation/auth_animation_controller.dart';
+import '../../helpers/app_theme.dart';
+import '../../components/custom_text_formfield.dart';
+import '../../components/custom_button.dart';
+import 'widgets/animated_background.dart';
+import 'widgets/animated_auth_form.dart';
+import 'widgets/auth_switch_link.dart';
+import '../../components/custom_header_button.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({Key? key}) : super(key: key);
+  const LoginPage({super.key});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
+  bool _isDarkMode = false;
+  final bool _passwordVisible = false;
+  late AuthAnimationController _authAnimationController;
 
   final AuthController _authController = AuthController();
 
+  @override
+  void initState() {
+    super.initState();
+    _authAnimationController = AuthAnimationController(vsync: this);
+    _authAnimationController.startAnimations();
+  }
   Future<void> _login() async {
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
       setState(() {
@@ -38,6 +54,9 @@ class _LoginPageState extends State<LoginPage> {
       );
 
       if (user != null) {
+        // Start exit animation to go to home page 
+        await _authAnimationController.exitController.forward();
+        // Navigate to home after animation completes
         Navigator.pushReplacementNamed(context, 'home');
       }
     } catch (e) {
@@ -50,55 +69,64 @@ class _LoginPageState extends State<LoginPage> {
       });
     }
   }
-//---------------
-// up to you loay if you want to put the one you made or use the auth controller
-// commenting out the one you made for now
-// add it later if you decide to use your way and delete mine
-//---------------
-  //Future<void> _login() async {
-  //  setState(() {
-  //    _isLoading = true;
-  //    _errorMessage = null;
-  //  });
-//
-  //  try {
-  //    await FirebaseAuth.instance.signInWithEmailAndPassword(
-  //      email: _emailController.text.trim(),
-  //      password: _passwordController.text.trim(),
-  //    );
-  //    Navigator.pushReplacementNamed(context, 'home');
-  //  } on FirebaseAuthException catch (e) {
-  //    setState(() {
-  //      _errorMessage = e.message;
-  //    });
-  //  } finally {
-  //    setState(() {
-  //      _isLoading = false;
-  //    });
-  //  }
-  //}
+
+  void _toggleTheme() {
+    setState(() {
+      _isDarkMode = !_isDarkMode;
+    });
+  }
+
+    @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _authAnimationController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
-    backgroundColor: const Color(0xFFF8FFFE),
-    body: SafeArea(
-      child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            children: [
-              const SizedBox(height: 60),
-              
-              // Logo and Welcome Section
-              Container(
+      backgroundColor: AppTheme.backgroundColor(_isDarkMode),
+      body: Stack(
+        children: [
+          // Background with floating medical icons
+          AnimatedBackground(
+            backgroundController: _authAnimationController.backgroundController,
+            isDarkMode: _isDarkMode,
+          ),
+
+          // Theme toggle button
+          Positioned(
+            top: 30,
+            right: 20,
+            child: HeaderButton(
+              icon: _isDarkMode ? Icons.light_mode : Icons.dark_mode,
+              onTap: _toggleTheme,
+              iconColor: AppTheme.textColor(_isDarkMode),
+              iconSize: 24,
+              padding: const EdgeInsets.all(12),
+              backgroundColor: AppTheme.cardColor(_isDarkMode),
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+
+          // the auth form with animations
+          AnimatedAuthForm(
+              slideController: _authAnimationController.slideController,
+              exitController: _authAnimationController.exitController,
+              formFade: _authAnimationController.formFade,
+              isDarkMode: _isDarkMode,
+              heightFactor: 0.80,
+              logo: Container(
                 width: 120,
                 height: 120,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFFB6EAC7).withValues(alpha: 0.3),
+                      color: Colors.white.withValues(alpha: 0.2),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),
@@ -112,208 +140,50 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
               ),
-              
-              const SizedBox(height: 32),
-              
-              Text(
-                'Welcome Back to Wellness',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF2D5A3D),
-                  letterSpacing: -0.5,
+              title: "Welcome Back",
+              subtitle: "Sign in to continue your wellness journey",
+              errorMessage: _errorMessage,
+              fields: [
+                CustomTextFormField(
+                  controller: _emailController,
+                  hintText: "Email Address",
+                  prefixIcon: Icons.email_outlined,
                 ),
-              ),
-              
-              const SizedBox(height: 8),
-              
-              Text(
-                'Sign in to continue your wellness journey',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: const Color(0xFF6B8E7B),
-                  fontWeight: FontWeight.w400,
+                CustomTextFormField(
+                  controller: _passwordController,
+                  hintText: "Password",
+                  prefixIcon: Icons.lock_outline,
+                  obscureText: !_passwordVisible,
                 ),
+              ],
+              actionButton: CustomButton(
+                onPressed: _isLoading ? null : _login,
+                text: "Sign In",
+                isLoading: _isLoading,
               ),
-              
-              const SizedBox(height: 48),
-              
-              // Error Message
-              if (_errorMessage != null)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  margin: const EdgeInsets.only(bottom: 24),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFEBEE),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFE57373)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.error_outline,
-                        color: Color(0xFFE57373),
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          _errorMessage!,
-                          style: const TextStyle(
-                            color: Color(0xFFD32F2F),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+              bottomWidget: [
+                const SizedBox(height: 25),
+                AuthLinkRow(
+                  leadingText: "Don't have an account?",
+                  actionText: "Sign Up",
+                  onTap: () {
+                    Navigator.pushNamed(context, 'signup');
+                  },
+                  isDarkMode: _isDarkMode,
                 ),
-
-              // Email Field
-              CustomTextFormField(
-                controller: _emailController,
-                hintText: "Email Address",
-                maxLines: 1,
-                obscureText: false,
-                keyboardType: TextInputType.emailAddress,
-                prefixIcon: Icons.email_outlined,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return "Please enter your email address";
-                  }
-                  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                    return "Please enter a valid email address";
-                  }
-                  return null;
-                },
-              ),
-              
-              const SizedBox(height: 20),
-              
-              // Password Field
-              CustomTextFormField(
-                controller: _passwordController,
-                hintText: "Password",
-                maxLines: 1,
-                obscureText: true,
-                prefixIcon: Icons.lock_outline,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return "Please enter your password";
-                  }
-                  return null;
-                },
-              ),
-              
-              const SizedBox(height: 32),
-              
-              // Login Button
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFB6EAC7), Color(0xFF9BE0A8)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFB6EAC7).withValues(alpha: 0.3),
-                        blurRadius: 15,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _login,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    child: _isLoading
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
-                        : const Text(
-                            "Sign In",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                  ),
+                const SizedBox(height: 5),
+                AuthLinkRow(
+                  leadingText: "Forgot your password?",
+                  actionText: "Reset",
+                  onTap: () {
+                    Navigator.pushNamed(context, 'reset_password');
+                  },
+                  isDarkMode: _isDarkMode,
                 ),
-              ),
-              
-              const SizedBox(height: 24),
-              
-              // Forgot Password
-              TextButton(
-                onPressed: () {
-                  // TODO: Add forgot password functionality
-                },
-                child: Text(
-                  "Forgot Password?",
-                  style: TextStyle(
-                    color: const Color(0xFF6B8E7B),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    decoration: TextDecoration.underline,
-                  ),
-                ),
-              ),
-              
-              const SizedBox(height: 40),
-              
-              // Sign Up Link
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    "Don't have an account? ",
-                    style: TextStyle(
-                      color: const Color(0xFF6B8E7B),
-                      fontSize: 14,
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pushReplacementNamed(context, 'signup');
-                    },
-                    child: Text(
-                      "Sign Up",
-                      style: TextStyle(
-                        color: const Color(0xFF2D5A3D),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              
-              const SizedBox(height: 40),
-            ],
-          ),
+              ],
+            ),
+          ],
         ),
-      ),
-    ),
-  );
+      );
   }
 }
