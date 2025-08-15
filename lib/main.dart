@@ -2,7 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:health/firebase_options.dart';
 import 'views/splash_screen_views.dart';
-import 'package:health/home.dart';
+import 'package:health/views/home_view/home.dart';
 import 'package:health/views/auth_view/login.dart';
 import 'package:health/views/auth_view/signup.dart';
 

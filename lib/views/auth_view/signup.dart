@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:health/components/CustomTextFormField.dart';
+import 'package:health/components/custom_text_formfield.dart';
 import '../../controllers/auth_controller.dart';
 
 class SignUpPage extends StatefulWidget {
