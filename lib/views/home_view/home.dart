@@ -1,4 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart' as auth;
 import 'package:flutter/material.dart';
+import 'package:health/components/custom_button.dart';
+import 'package:health/models/user_model.dart';
 import 'package:health/views/home_view/widgets/scorebar_widget.dart';
 import '../../helpers/app_theme.dart';
 import '../../controllers/animation/home_animation_controller.dart';
@@ -20,16 +23,36 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   int _currentNavIndex = 0;
   bool _isDarkMode = false;
   late HomeAnimations _animations;
+  User? _user;
 
   void initState() {
     super.initState();
     _animations = HomeAnimations(this);
     _animations.start();
+    fetchUserData();
   }
 
   void dispose() {
     _animations.dispose();
     super.dispose();
+  }
+
+  void fetchUserData() async {
+    final auth.FirebaseAuth _auth = auth.FirebaseAuth.instance;
+    String? uid = _auth.currentUser?.uid;
+
+    if (uid != null) {
+      final user = await User.getUser(uid);
+      _user = user;
+      // if (user != null) {
+      //   print("User: ${user.name}, cpr: ${user.cpr}");
+      //   print('=====================================');
+      // } else {
+      //   print("User not found!");
+      // }
+    } else {
+      print("No logged in user!");
+    }
   }
 
   @override
@@ -109,8 +132,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                       ),
                                     ),
                                     const SizedBox(width: 8),
-                                    const Text(
-                                      'Good Morning, Ahmed',
+                                    Text(
+                                      'Good Morning,${_user?.name ?? 'User'}',
                                       style: TextStyle(
                                         fontSize: 20,
                                         fontWeight: FontWeight.w600,
@@ -386,6 +409,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       const SizedBox(
                         height: 120,
                       ), // Space for bottom navigation
+                      CustomButton(onPressed: () {}, text: 'get user data'),
                     ],
                   ),
                 ),
