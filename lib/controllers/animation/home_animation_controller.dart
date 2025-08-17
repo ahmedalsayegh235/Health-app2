@@ -14,7 +14,7 @@ class HomeAnimations {
     navAnimationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: vsync,
-    )..repeat();
+    );
 
     scoreAnimationController = AnimationController(
       duration: const Duration(milliseconds: 1500),

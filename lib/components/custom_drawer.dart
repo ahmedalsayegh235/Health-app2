@@ -13,12 +13,17 @@ class CustomDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final double screenHeight = MediaQuery.of(context).size.height;
+    final double screenWidth = MediaQuery.of(context).size.width;
+
     return Drawer(
       backgroundColor: AppTheme.backgroundColor(isDarkMode),
       child: Column(
         children: [
+          // Fixed header
           Container(
-            height: 200,
+            height: screenHeight * 0.292, 
+            width: double.infinity,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
@@ -26,13 +31,13 @@ class CustomDrawer extends StatelessWidget {
                 colors: AppTheme.headerGradient(isDarkMode),
               ),
             ),
-            child: const SafeArea(
+            child: SafeArea(
               child: Padding(
-                padding: EdgeInsets.all(20),
+                padding: EdgeInsets.all(screenWidth * 0.05),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
+                  children: const [
                     CircleAvatar(
                       radius: 30,
                       backgroundColor: Colors.white,
@@ -60,6 +65,8 @@ class CustomDrawer extends StatelessWidget {
               ),
             ),
           ),
+
+          // Scrollable drawer items
           Expanded(
             child: ListView(
               padding: EdgeInsets.zero,
@@ -70,9 +77,7 @@ class CustomDrawer extends StatelessWidget {
                 _buildDrawerItem(context, Icons.local_hospital, 'Emergency'),
                 _buildDrawerItem(context, Icons.settings, 'Settings'),
                 Divider(
-                  color: isDarkMode
-                      ? const Color(0xFF1E1E1E)
-                      : Colors.grey[300],
+                  color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.grey[300],
                 ),
                 _buildDrawerItem(context, Icons.help_outline, 'Help & Support'),
                 _buildDrawerItem(context, Icons.info_outline, 'About'),
@@ -95,9 +100,9 @@ class CustomDrawer extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: isActive ? const Color(0xFF2D7A32).withValues(alpha: 0.1) : null,
+        color: isActive ? const Color(0xFF2D7A32).withOpacity(0.1) : null,
         border: isActive
-            ? Border.all(color: const Color(0xFF2D7A32).withValues(alpha: 0.3))
+            ? Border.all(color: const Color(0xFF2D7A32).withOpacity(0.3))
             : null,
       ),
       child: ListTile(
@@ -105,14 +110,14 @@ class CustomDrawer extends StatelessWidget {
           icon,
           color: isActive
               ? const Color(0xFF00E676)
-              : AppTheme.textSecondaryColor(isDarkMode), 
+              : AppTheme.textSecondaryColor(isDarkMode),
         ),
         title: Text(
           title,
           style: TextStyle(
             color: isActive
                 ? const Color(0xFF00E676)
-                : AppTheme.textSecondaryColor(isDarkMode), 
+                : AppTheme.textSecondaryColor(isDarkMode),
             fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
           ),
         ),

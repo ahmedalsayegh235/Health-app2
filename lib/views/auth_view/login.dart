@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:health/helpers/theme_provider.dart';
+import 'package:provider/provider.dart';
 import '../../controllers/auth_controller.dart';
 import '../../controllers/animation/auth_animation_controller.dart';
 import '../../helpers/app_theme.dart';
@@ -22,10 +24,9 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
-  bool _isDarkMode = false;
+  bool isDarkMode = false;
   final bool _passwordVisible = false;
   late AuthAnimationController _authAnimationController;
-
   final AuthController _authController = AuthController();
 
   @override
@@ -71,9 +72,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   }
 
   void _toggleTheme() {
-    setState(() {
-      _isDarkMode = !_isDarkMode;
-    });
+    Provider.of<ThemeProvider>(context, listen: false).toggleTheme();
   }
 
     @override
@@ -86,15 +85,16 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    bool isDarkMode = Provider.of<ThemeProvider>(context).isDarkMode;
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor(_isDarkMode),
+      backgroundColor: AppTheme.backgroundColor(isDarkMode),
       body: Stack(
         children: [
           // Background with floating medical icons
           AnimatedBackground(
             backgroundController: _authAnimationController.backgroundController,
-            isDarkMode: _isDarkMode,
+            isDarkMode: isDarkMode,
           ),
 
           // Theme toggle button
@@ -102,12 +102,12 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
             top: 30,
             right: 20,
             child: HeaderButton(
-              icon: _isDarkMode ? Icons.light_mode : Icons.dark_mode,
+              icon: isDarkMode ? Icons.light_mode : Icons.dark_mode,
               onTap: _toggleTheme,
-              iconColor: AppTheme.textColor(_isDarkMode),
+              iconColor: AppTheme.textColor(isDarkMode),
               iconSize: 24,
               padding: const EdgeInsets.all(12),
-              backgroundColor: AppTheme.cardColor(_isDarkMode),
+              backgroundColor: AppTheme.cardColor(isDarkMode),
               borderRadius: BorderRadius.circular(12),
             ),
           ),
@@ -117,7 +117,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
               slideController: _authAnimationController.slideController,
               exitController: _authAnimationController.exitController,
               formFade: _authAnimationController.formFade,
-              isDarkMode: _isDarkMode,
+              isDarkMode: isDarkMode,
               heightFactor: 0.80,
               logo: Container(
                 width: 120,
@@ -169,7 +169,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                   onTap: () {
                     Navigator.pushNamed(context, 'signup');
                   },
-                  isDarkMode: _isDarkMode,
+                  isDarkMode: isDarkMode,
                 ),
                 const SizedBox(height: 5),
                 AuthLinkRow(
@@ -178,7 +178,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                   onTap: () {
                     Navigator.pushNamed(context, 'reset_password');
                   },
-                  isDarkMode: _isDarkMode,
+                  isDarkMode: isDarkMode,
                 ),
               ],
             ),

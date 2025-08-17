@@ -29,36 +29,60 @@ class AuthController {
 
 
   /// Sign up and store user data in Firestore
-  Future<User?> signUp({
-    required String email,
-    required String password,
-    required String name,
-    required String cpr,
-    required String gender,
-    String role = 'patient',
-  }) async {
-    try {
-      UserCredential userCredential =
-          await _auth.createUserWithEmailAndPassword(
-        email: email.trim(),
-        password: password.trim(),
-      );
-
-      String uid = userCredential.user!.uid;
-
-      await _firestore.collection("users").doc(uid).set({
-        "id": uid,
-        "name": name.trim(),
-        "cpr": cpr.trim(),
-        "role": role,
-        "gender": gender,
-      });
-
-      return userCredential.user;
-    } on FirebaseAuthException catch (e) {
-      throw Exception(e.message);
-    }
+ Future<User?> signUp({
+  required String email,
+  required String password,
+  required String confirmPassword,
+  required String name,
+  required String cpr,
+  required String gender,
+  String role = 'patient',
+}) async {
+  // Check for empty fields
+  if (email.isEmpty || password.isEmpty || confirmPassword.isEmpty || name.isEmpty || cpr.isEmpty || gender.isEmpty) {
+    throw Exception("All fields are required.");
   }
+
+  // Check email format
+  final emailRegex = RegExp(r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$");
+  if (!emailRegex.hasMatch(email)) {
+    throw Exception("Please enter a valid email address.");
+  }
+
+  // Check password match
+  if (password != confirmPassword) {
+    throw Exception("Passwords do not match.");
+  }
+
+  // Check CPR format (9 digits)
+  final cprRegex = RegExp(r"^\d{9}$");
+  if (!cprRegex.hasMatch(cpr)) {
+    throw Exception("CPR must be exactly 9 digits.");
+  }
+
+  try {
+    UserCredential userCredential =
+        await _auth.createUserWithEmailAndPassword(
+      email: email.trim(),
+      password: password.trim(),
+    );
+
+    String uid = userCredential.user!.uid;
+
+    await _firestore.collection("users").doc(uid).set({
+      "id": uid,
+      "name": name.trim(),
+      "cpr": cpr.trim(),
+      "role": role,
+      "gender": gender,
+    });
+
+    return userCredential.user;
+  } on FirebaseAuthException catch (e) {
+    throw Exception(e.message);
+  }
+}
+
 
   /// Sign out
   Future<void> signOut() async {
