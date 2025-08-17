@@ -20,7 +20,6 @@ class SignUpPage extends StatefulWidget {
 }
 
 class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
-  final _formKey = GlobalKey<FormState>();
   final AuthController _authController = AuthController();
 
   final _emailController = TextEditingController();
