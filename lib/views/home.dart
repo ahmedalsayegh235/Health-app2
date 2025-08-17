@@ -1,5 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:health/controllers/auth_controller.dart';
+import 'package:health/models/user_model.dart';
+import 'package:health/views/splash_screen_views.dart';
 import 'package:health/views/tabs/activity_tab.dart';
 import 'package:health/views/tabs/appointment_tab.dart';
 import 'package:health/views/tabs/chat_tab.dart';
@@ -22,6 +25,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   int _currentNavIndex = 0;
   late HomeAnimations _animations;
+  bool _isLoading = false;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
@@ -29,12 +33,26 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     super.initState();
     _animations = HomeAnimations(this);
     _animations.start();
+    getUserData();
   }
 
   @override
   void dispose() {
     _animations.dispose();
     super.dispose();
+  }
+
+  void getUserData() async {
+    setState(() {
+      _isLoading = true;
+    });
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      await UserModel.getUserData(user.uid);
+    }
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   Future<void> _logoutUser() async {
@@ -100,27 +118,29 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
     return Theme(
       data: isDarkMode ? AppTheme.darkTheme : AppTheme.lightTheme,
-      child: Scaffold(
-        key: _scaffoldKey,
-        backgroundColor: AppTheme.backgroundColor(isDarkMode),
+      child: _isLoading
+          ? SplashScreenViews()
+          : Scaffold(
+              key: _scaffoldKey,
+              backgroundColor: AppTheme.backgroundColor(isDarkMode),
 
-        // Shared drawer for all tabs
-        drawer: CustomDrawer(
-          isDarkMode: isDarkMode,
-          onItemTap: _onDrawerItemTap,
-        ),
+              // Shared drawer for all tabs
+              drawer: CustomDrawer(
+                isDarkMode: isDarkMode,
+                onItemTap: _onDrawerItemTap,
+              ),
 
-        // Lazy-loaded tab content
-        body: _getCurrentTab(),
+              // Lazy-loaded tab content
+              body: _getCurrentTab(),
 
-        // Bottom navigation
-        bottomNavigationBar: BottomNav(
-          isDarkMode: isDarkMode,
-          currentIndex: _currentNavIndex,
-          onTap: (index) => setState(() => _currentNavIndex = index),
-          navAnimationController: _animations.navAnimationController,
-        ),
-      ),
+              // Bottom navigation
+              bottomNavigationBar: BottomNav(
+                isDarkMode: isDarkMode,
+                currentIndex: _currentNavIndex,
+                onTap: (index) => setState(() => _currentNavIndex = index),
+                navAnimationController: _animations.navAnimationController,
+              ),
+            ),
     );
   }
 }

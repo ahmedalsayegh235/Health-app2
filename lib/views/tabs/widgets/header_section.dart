@@ -6,16 +6,18 @@ import 'package:provider/provider.dart';
 import '../../../helpers/app_theme.dart';
 import '../../../controllers/animation/home_animation_controller.dart';
 
-
 class HeaderSection extends StatelessWidget {
   final HomeAnimations animations;
   final bool isdarkMode;
 
-  const HeaderSection({super.key, required this.animations, required this.isdarkMode});
+  const HeaderSection({
+    super.key,
+    required this.animations,
+    required this.isdarkMode,
+  });
 
   @override
   Widget build(BuildContext context) {
-
     void toggleTheme() {
       Provider.of<ThemeProvider>(context, listen: false).toggleTheme();
     }
@@ -53,7 +55,7 @@ class HeaderSection extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                         Builder(
+                        Builder(
                           builder: (context) => HeaderButton(
                             icon: Icons.menu,
                             onTap: () => Scaffold.of(context).openDrawer(),
@@ -65,8 +67,8 @@ class HeaderSection extends StatelessWidget {
                           ),
                         ),
 
-                        const SizedBox(width: 12),
-                        
+                        const SizedBox(width: 8),
+
                         Container(
                           width: 8,
                           height: 8,
@@ -77,7 +79,7 @@ class HeaderSection extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         const Text(
-                          'Good Morning, ',
+                          'Good Morning',
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w600,
@@ -89,9 +91,7 @@ class HeaderSection extends StatelessWidget {
                     Row(
                       children: [
                         HeaderButton(
-                          icon: isdarkMode
-                              ? Icons.light_mode
-                              : Icons.dark_mode,
+                          icon: isdarkMode ? Icons.light_mode : Icons.dark_mode,
                           onTap: toggleTheme,
                         ),
                         Stack(
@@ -135,8 +135,7 @@ class HeaderSection extends StatelessWidget {
                       children: [
                         const Text(
                           'Overall Health Score',
-                          style: TextStyle(
-                              fontSize: 12, color: Colors.white70),
+                          style: TextStyle(fontSize: 12, color: Colors.white70),
                         ),
                         const SizedBox(height: 8),
                         Row(
@@ -144,9 +143,10 @@ class HeaderSection extends StatelessWidget {
                             const Text(
                               '100/100',
                               style: TextStyle(
-                                  fontSize: 32,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white),
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                             ),
                             const SizedBox(width: 16),
                             ScoreBar(animation: animations.scoreAnimation),
@@ -159,21 +159,21 @@ class HeaderSection extends StatelessWidget {
                       children: [
                         const Text(
                           'Last Updated',
-                          style: TextStyle(
-                              fontSize: 12, color: Colors.white70),
+                          style: TextStyle(fontSize: 12, color: Colors.white70),
                         ),
                         const SizedBox(height: 4),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Text(
                             '2 minutes ago',
-                            style: TextStyle(
-                                fontSize: 12, color: Colors.white),
+                            style: TextStyle(fontSize: 12, color: Colors.white),
                           ),
                         ),
                       ],
