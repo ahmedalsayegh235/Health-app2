@@ -31,8 +31,9 @@ class MetricCard extends StatelessWidget {
 
     // Auto calculate change
     final double diff = value - previousValue;
-    final double percentChange =
-        previousValue == 0 ? 0 : (diff / previousValue) * 100;
+    final double percentChange = previousValue == 0
+        ? 0
+        : (diff / previousValue) * 100;
     final bool isPositive = diff >= 0;
 
     return GestureDetector(
@@ -93,7 +94,10 @@ class MetricCard extends StatelessWidget {
                         child: Icon(icon, color: iconColor, size: 19),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: (isPositive ? Colors.green : Colors.red)
                               .withValues(alpha: .1),
@@ -122,7 +126,7 @@ class MetricCard extends StatelessWidget {
                   Text(
                     title,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 11.5,
                       color: AppTheme.textSecondaryColor(isDarkMode),
                       fontWeight: FontWeight.w500,
                     ),
@@ -137,7 +141,7 @@ class MetricCard extends StatelessWidget {
                       Text(
                         value.toStringAsFixed(1),
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 12,
                           fontWeight: FontWeight.bold,
                           color: AppTheme.textColor(isDarkMode),
                         ),

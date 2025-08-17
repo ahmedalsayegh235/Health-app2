@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:health/firebase_options.dart';
@@ -7,14 +8,17 @@ import 'package:health/views/auth_view/login.dart';
 import 'package:health/views/auth_view/signup.dart';
 import 'package:provider/provider.dart';
 import 'helpers/theme_provider.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  runApp(ChangeNotifierProvider(
-    create: (context) => ThemeProvider(),
-    child: MainApp(),
-  ));
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => ThemeProvider(),
+      child: const MainApp(),
+    ),
+  );
 }
 
 class MainApp extends StatelessWidget {
@@ -24,11 +28,14 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
+        final user = FirebaseAuth.instance.currentUser;
         return MaterialApp(
           theme: ThemeData.light(),
           darkTheme: ThemeData.dark(),
-          themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-          initialRoute: 'login',
+          themeMode: themeProvider.isDarkMode
+              ? ThemeMode.dark
+              : ThemeMode.light,
+          initialRoute: user != null ? 'home' : 'login',
           routes: {
             'signup': (context) => SignUpPage(),
             'login': (context) => const LoginPage(),
@@ -40,4 +47,3 @@ class MainApp extends StatelessWidget {
     );
   }
 }
-

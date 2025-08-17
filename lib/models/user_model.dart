@@ -1,9 +1,45 @@
-class User{
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class UserModel {
   String? id;
   String? role;
-  String? fullname;
-  String? email;
-  String? phone;
+  String? name;
+  String? cpr;
+  String? gender;
+  static UserModel userData = UserModel();
+  UserModel({this.id, this.role, this.name, this.cpr, this.gender});
 
-  User({this.id, this.role, this.fullname, this.email, this.phone});
+  factory UserModel.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return UserModel(
+      id: doc.id,
+      role: data['role'],
+      name: data['name'],
+      cpr: data['cpr'],
+      gender: data['gender'],
+    );
+  }
+  Map<String, dynamic> toMap() {
+    return {'role': role, 'name': name, 'cpr': cpr, 'gender': gender};
+  }
+
+  static Future<UserModel?> getUserData(String userId) async {
+    try {
+      DocumentSnapshot doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+
+      if (doc.exists) {
+        UserModel fetchedUser = UserModel.fromFirestore(doc);
+        userData = fetchedUser;
+        return fetchedUser;
+      } else {
+        return null;
+      }
+    } catch (e) {
+      print('Error fetching UserModel: $e');
+      return null;
+    }
+  }
 }

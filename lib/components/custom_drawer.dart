@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:health/models/user_model.dart';
 import '../helpers/app_theme.dart';
 
 class CustomDrawer extends StatelessWidget {
@@ -22,7 +23,7 @@ class CustomDrawer extends StatelessWidget {
         children: [
           // Fixed header
           Container(
-            height: screenHeight * 0.292, 
+            height: screenHeight * 0.292,
             width: double.infinity,
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -37,8 +38,8 @@ class CustomDrawer extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.end,
-                  children: const [
-                    CircleAvatar(
+                  children: [
+                    const CircleAvatar(
                       radius: 30,
                       backgroundColor: Colors.white,
                       child: Icon(
@@ -47,16 +48,16 @@ class CustomDrawer extends StatelessWidget {
                         color: Color(0xFF2D7A32),
                       ),
                     ),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     Text(
-                      'Ahmed Alsayegh',
-                      style: TextStyle(
+                      UserModel.userData.name ?? 'User Name',
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
                     ),
-                    Text(
+                    const Text(
                       'ahmed@email.com',
                       style: TextStyle(fontSize: 14, color: Colors.white70),
                     ),
@@ -71,13 +72,19 @@ class CustomDrawer extends StatelessWidget {
             child: ListView(
               padding: EdgeInsets.zero,
               children: [
-                _buildDrawerItem(context, Icons.health_and_safety, 'Health Records'),
+                _buildDrawerItem(
+                  context,
+                  Icons.health_and_safety,
+                  'Health Records',
+                ),
                 _buildDrawerItem(context, Icons.calendar_today, 'Appointments'),
                 _buildDrawerItem(context, Icons.medication, 'Medications'),
                 _buildDrawerItem(context, Icons.local_hospital, 'Emergency'),
                 _buildDrawerItem(context, Icons.settings, 'Settings'),
                 Divider(
-                  color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.grey[300],
+                  color: isDarkMode
+                      ? const Color(0xFF1E1E1E)
+                      : Colors.grey[300],
                 ),
                 _buildDrawerItem(context, Icons.help_outline, 'Help & Support'),
                 _buildDrawerItem(context, Icons.info_outline, 'About'),
