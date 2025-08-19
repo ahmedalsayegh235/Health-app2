@@ -71,6 +71,7 @@ class AuthController {
 
     await _firestore.collection("users").doc(uid).set({
       "id": uid,
+      "email":email.trim(),
       "name": name.trim(),
       "cpr": cpr.trim(),
       "role": role,
