@@ -1,5 +1,7 @@
 // lib/views/home_view/hometab.dart
 import 'package:flutter/material.dart';
+import 'package:health/providers/user_provider.dart';
+import 'package:health/views/splash_screen_views.dart';
 import 'package:health/views/tabs/widgets/header_section.dart';
 import 'package:provider/provider.dart';
 import '../../helpers/theme_provider.dart';
@@ -12,22 +14,21 @@ class HomeTab extends StatefulWidget {
   final TickerProvider vsync;
   final HomeAnimations animations;
 
-  const HomeTab({
-    super.key,
-    required this.vsync,
-    required this.animations,
-  });
+  const HomeTab({super.key, required this.vsync, required this.animations});
 
   @override
   State<HomeTab> createState() => _HomeTabState();
 }
 
 class _HomeTabState extends State<HomeTab> {
-  
-
   @override
   Widget build(BuildContext context) {
+    final user = Provider.of<UserProvider>(context).user;
     bool isDarkMode = Provider.of<ThemeProvider>(context).isDarkMode;
+
+    if (user == null) {
+      return const SplashScreenViews();
+    }
 
     return SingleChildScrollView(
       child: Column(

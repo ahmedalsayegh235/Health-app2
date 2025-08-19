@@ -4,10 +4,11 @@ class UserModel {
   String? id;
   String? role;
   String? name;
+  String? email;
   String? cpr;
   String? gender;
   static UserModel userData = UserModel();
-  UserModel({this.id, this.role, this.name, this.cpr, this.gender});
+  UserModel({this.id, this.email, this.role, this.name, this.cpr, this.gender});
 
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -15,6 +16,7 @@ class UserModel {
       id: doc.id,
       role: data['role'],
       name: data['name'],
+      email: data['email'],
       cpr: data['cpr'],
       gender: data['gender'],
     );

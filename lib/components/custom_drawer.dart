@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:health/models/user_model.dart';
+import 'package:health/providers/user_provider.dart';
+import 'package:provider/provider.dart';
 import '../helpers/app_theme.dart';
 
 class CustomDrawer extends StatelessWidget {
@@ -7,13 +8,14 @@ class CustomDrawer extends StatelessWidget {
   final Function(String) onItemTap;
 
   const CustomDrawer({
-    Key? key,
+    super.key,
     required this.isDarkMode,
     required this.onItemTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
+    final user = Provider.of<UserProvider>(context).user;
     final double screenHeight = MediaQuery.of(context).size.height;
     final double screenWidth = MediaQuery.of(context).size.width;
 
@@ -42,23 +44,23 @@ class CustomDrawer extends StatelessWidget {
                     const CircleAvatar(
                       radius: 30,
                       backgroundColor: Colors.white,
-                      child: Icon(
-                        Icons.person,
-                        size: 30,
-                        color: Color(0xFF2D7A32),
-                      ),
+                      backgroundImage: AssetImage('assets/images/placeholderdog.png'),
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      UserModel.userData.name ?? 'User Name',
+                          user != null && user.name != null && user.name!.isNotEmpty
+                          ? user.name!.split(' ').first
+                          : 'undefined user', // just incase firebase becomes dumb
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
                     ),
-                    const Text(
-                      'ahmed@email.com',
+                    Text(
+                          user != null && user.email != null && user.email!.isNotEmpty
+                          ? '${user.email}'
+                          : 'undefined user', // just incase firebase becomes dumb
                       style: TextStyle(fontSize: 14, color: Colors.white70),
                     ),
                   ],
@@ -107,9 +109,9 @@ class CustomDrawer extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: isActive ? const Color(0xFF2D7A32).withOpacity(0.1) : null,
+        color: isActive ? const Color(0xFF2D7A32).withValues(alpha: .1) : null,
         border: isActive
-            ? Border.all(color: const Color(0xFF2D7A32).withOpacity(0.3))
+            ? Border.all(color: const Color(0xFF2D7A32).withValues(alpha: .3))
             : null,
       ),
       child: ListTile(

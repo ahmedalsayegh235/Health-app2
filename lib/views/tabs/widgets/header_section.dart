@@ -5,6 +5,7 @@ import 'package:health/views/widgets/scorebar_widget.dart';
 import 'package:provider/provider.dart';
 import '../../../helpers/app_theme.dart';
 import '../../../controllers/animation/home_animation_controller.dart';
+import '../../../providers/user_provider.dart';
 
 class HeaderSection extends StatelessWidget {
   final HomeAnimations animations;
@@ -21,6 +22,8 @@ class HeaderSection extends StatelessWidget {
     void toggleTheme() {
       Provider.of<ThemeProvider>(context, listen: false).toggleTheme();
     }
+
+    final user = Provider.of<UserProvider>(context).user;
 
     return SlideTransition(
       position: animations.headerSlideAnimation,
@@ -78,10 +81,12 @@ class HeaderSection extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        const Text(
-                          'Good Morning',
-                          style: TextStyle(
-                            fontSize: 20,
+                        Text(
+                          user != null && user.name != null && user.name!.isNotEmpty
+                          ? 'Good Morning, ${user.name!.split(' ').first}'
+                          : 'Good Morning', // just incase firebase becomes dumb
+                          style: const TextStyle(
+                            fontSize: 16,
                             fontWeight: FontWeight.w600,
                             color: Colors.white,
                           ),

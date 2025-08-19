@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:health/controllers/auth_controller.dart';
 import 'package:health/models/user_model.dart';
+import 'package:health/providers/user_provider.dart';
 import 'package:health/views/splash_screen_views.dart';
 import 'package:health/views/tabs/activity_tab.dart';
 import 'package:health/views/tabs/appointment_tab.dart';
@@ -41,14 +42,17 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     _animations.dispose();
     super.dispose();
   }
-
+// using provider to allow reactivity eliminates static code instead of calling user each tome
   void getUserData() async {
     setState(() {
       _isLoading = true;
     });
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      await UserModel.getUserData(user.uid);
+      final fetchedUser = await UserModel.getUserData(user.uid);
+      if (fetchedUser != null) {
+        Provider.of<UserProvider>(context, listen: false).setUser(fetchedUser);
+      }
     }
     setState(() {
       _isLoading = false;
