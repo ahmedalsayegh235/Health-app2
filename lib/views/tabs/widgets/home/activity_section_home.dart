@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../helpers/app_theme.dart';
-import '../../widgets/activity_item.dart';
+import '../../../../helpers/app_theme.dart';
+import '../../../widgets/activity_item.dart';
 
 class ActivitySection extends StatelessWidget {
   final bool isDarkMode;

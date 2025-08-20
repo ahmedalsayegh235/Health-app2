@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../helpers/app_theme.dart';
-import '../../widgets/quick_action_card.dart';
+import '../../../../helpers/app_theme.dart';
+import '../../../widgets/quick_action_card.dart';
 
 class QuickActionSection extends StatelessWidget {
   final TickerProvider vsync;

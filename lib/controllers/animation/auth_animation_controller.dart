@@ -2,18 +2,19 @@ import 'package:flutter/material.dart';
 
 class AuthAnimationController {
   // Animation controllers
-  late AnimationController formController;
-  late AnimationController slideController;
-  late AnimationController backgroundController;
-  late AnimationController exitController;
+  late final AnimationController formController;
+  late final AnimationController slideController;
+  late final AnimationController backgroundController;
+  late final AnimationController exitController;
 
   // Animations
-  late Animation<double> formFade;
-  late Animation<double> slide;
-  late Animation<double> background;
-  late Animation<double> exitSlide;
+  late final Animation<double> formFade;
+  late final Animation<double> slide;
+  late final Animation<double> background;
+  late final Animation<double> exitSlide;
 
   final TickerProvider vsync;
+  bool _isDisposed = false;
 
   AuthAnimationController({required this.vsync}) {
     _setupAnimations();
@@ -32,7 +33,7 @@ class AuthAnimationController {
       vsync: vsync,
     );
 
-    // Background animation controller for floating medical icons
+    // Background animation controller
     backgroundController = AnimationController(
       duration: const Duration(seconds: 50),
       vsync: vsync,
@@ -64,17 +65,20 @@ class AuthAnimationController {
 
   void startAnimations() {
     Future.delayed(const Duration(milliseconds: 300), () {
-      slideController.forward();
+      if (!_isDisposed) slideController.forward();
     });
 
     Future.delayed(const Duration(milliseconds: 800), () {
-      formController.forward();
+      if (!_isDisposed) formController.forward();
     });
 
-    backgroundController.repeat();
+    if (!_isDisposed) {
+      backgroundController.repeat();
+    }
   }
 
   void dispose() {
+    _isDisposed = true;
     formController.dispose();
     slideController.dispose();
     backgroundController.dispose();

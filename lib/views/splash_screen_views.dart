@@ -4,7 +4,6 @@ import 'package:health/helpers/theme_provider.dart';
 import 'package:health/views/auth_view/widgets/animated_background.dart';
 import 'package:provider/provider.dart';
 
-
 class SplashScreenViews extends StatefulWidget {
   const SplashScreenViews({super.key});
 
@@ -24,6 +23,7 @@ class _SplashScreenViewsState extends State<SplashScreenViews>
 
     // Optional: Navigate after a delay
     Future.delayed(const Duration(seconds: 3), () async {
+      if (!mounted) return;
       await _authAnimationController.exitController.forward();
       if (mounted) {
         Navigator.pushReplacementNamed(context, 'login');
@@ -48,7 +48,7 @@ class _SplashScreenViewsState extends State<SplashScreenViews>
             isDarkMode: isDarkMode,
           ),
 
-          //Splash screen 
+          //Splash screen
           Center(
             child: TweenAnimationBuilder<double>(
               tween: Tween(begin: 0.8, end: 1.0),

@@ -2,13 +2,13 @@
 import 'package:flutter/material.dart';
 import 'package:health/providers/user_provider.dart';
 import 'package:health/views/splash_screen_views.dart';
-import 'package:health/views/tabs/widgets/header_section.dart';
+import 'package:health/views/tabs/widgets/home/header_section_home.dart';
 import 'package:provider/provider.dart';
 import '../../helpers/theme_provider.dart';
 import '../../controllers/animation/home_animation_controller.dart';
-import 'widgets/activity_section.dart';
-import 'widgets/health_metric_section.dart';
-import 'widgets/quick_action_section.dart';
+import 'widgets/home/activity_section_home.dart';
+import 'widgets/home/health_metric_section_home.dart';
+import 'widgets/home/quick_action_section_home.dart';
 
 class HomeTab extends StatefulWidget {
   final TickerProvider vsync;
@@ -22,9 +22,18 @@ class HomeTab extends StatefulWidget {
 
 class _HomeTabState extends State<HomeTab> {
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Start animations every time the tab appears
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.animations.start();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final user = Provider.of<UserProvider>(context).user;
-    bool isDarkMode = Provider.of<ThemeProvider>(context).isDarkMode;
+    final isDarkMode = Provider.of<ThemeProvider>(context).isDarkMode;
 
     if (user == null) {
       return const SplashScreenViews();
@@ -35,7 +44,10 @@ class _HomeTabState extends State<HomeTab> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ---------------- HEADER ----------------
-          HeaderSection(animations: widget.animations, isdarkMode: isDarkMode),
+          HeaderSection(
+            animations: widget.animations,
+            isdarkMode: isDarkMode,
+          ),
           const SizedBox(height: 30),
 
           // ---------------- BODY CONTENT ----------------
@@ -52,6 +64,7 @@ class _HomeTabState extends State<HomeTab> {
                     vsync: widget.vsync,
                   ),
                   const SizedBox(height: 40),
+
                   // Recent activity
                   ActivitySection(
                     isDarkMode: isDarkMode,
@@ -80,6 +93,7 @@ class _HomeTabState extends State<HomeTab> {
                     ],
                   ),
                   const SizedBox(height: 40),
+
                   // Quick actions
                   QuickActionSection(
                     isDarkMode: isDarkMode,

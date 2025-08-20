@@ -3,9 +3,9 @@ import 'package:health/components/custom_header_button.dart';
 import 'package:health/helpers/theme_provider.dart';
 import 'package:health/views/widgets/scorebar_widget.dart';
 import 'package:provider/provider.dart';
-import '../../../helpers/app_theme.dart';
-import '../../../controllers/animation/home_animation_controller.dart';
-import '../../../providers/user_provider.dart';
+import '../../../../helpers/app_theme.dart';
+import '../../../../controllers/animation/home_animation_controller.dart';
+import '../../../../providers/user_provider.dart';
 
 class HeaderSection extends StatelessWidget {
   final HomeAnimations animations;
