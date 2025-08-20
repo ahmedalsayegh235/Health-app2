@@ -10,7 +10,14 @@ class HomeAnimations {
   late Animation<Offset> headerSlideAnimation;
   late Animation<double> fadeAnimation;
 
-  HomeAnimations(TickerProvider vsync) {
+  final TickerProvider vsync;
+
+  HomeAnimations(this.vsync) {
+    _setupControllers();
+    _setupAnimations();
+  }
+
+  void _setupControllers() {
     navAnimationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: vsync,
@@ -30,7 +37,9 @@ class HomeAnimations {
       duration: const Duration(milliseconds: 1000),
       vsync: vsync,
     );
+  }
 
+  void _setupAnimations() {
     scoreAnimation = Tween<double>(begin: 0.0, end: 0.85).animate(
       CurvedAnimation(
         parent: scoreAnimationController,
@@ -40,11 +49,11 @@ class HomeAnimations {
 
     headerSlideAnimation =
         Tween<Offset>(begin: const Offset(0, -1), end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: headerSlideController,
-            curve: Curves.easeOutCubic,
-          ),
-        );
+      CurvedAnimation(
+        parent: headerSlideController,
+        curve: Curves.easeOutCubic,
+      ),
+    );
 
     fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
@@ -55,6 +64,12 @@ class HomeAnimations {
   }
 
   void start() {
+    // Reset controllers first so animation always plays from start
+    headerSlideController.reset();
+    scoreAnimationController.reset();
+    buttonAnimationController.reset();
+    navAnimationController.reset();
+
     headerSlideController.forward();
     Future.delayed(const Duration(milliseconds: 500), () {
       scoreAnimationController.forward();

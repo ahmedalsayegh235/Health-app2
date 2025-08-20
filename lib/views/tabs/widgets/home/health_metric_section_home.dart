@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../helpers/app_theme.dart';
-import '../../widgets/metric_card.dart';
+import '../../../../helpers/app_theme.dart';
+import '../../../widgets/metric_card.dart';
 
 class HealthMetricsSection extends StatelessWidget {
   final TickerProvider vsync; 
