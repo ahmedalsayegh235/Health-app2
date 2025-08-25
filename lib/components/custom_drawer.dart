@@ -46,7 +46,7 @@ class CustomDrawer extends StatelessWidget {
                       backgroundColor: Colors.white,
                       backgroundImage: AssetImage('assets/images/placeholderdog.png'),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 10),
                     Text(
                           user != null && user.name != null && user.name!.isNotEmpty
                           ? user.name!.split(' ').first

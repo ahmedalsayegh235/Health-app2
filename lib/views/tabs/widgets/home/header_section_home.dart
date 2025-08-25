@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:health/components/custom_header_button.dart';
+import 'package:health/components/status_indicator.dart';
 import 'package:health/helpers/theme_provider.dart';
 import 'package:health/views/widgets/scorebar_widget.dart';
 import 'package:provider/provider.dart';
@@ -72,21 +73,16 @@ class HeaderSection extends StatelessWidget {
 
                         const SizedBox(width: 8),
 
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF00E676),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
+                        StatusIndicator(),
                         const SizedBox(width: 8),
                         Text(
-                          user != null && user.name != null && user.name!.isNotEmpty
-                          ? 'Good Morning, ${user.name!.split(' ').first}'
-                          : 'Good Morning', // just incase firebase becomes dumb
+                          user != null &&
+                                  user.name != null &&
+                                  user.name!.isNotEmpty
+                              ? 'Welcome back, ${user.name!.split(' ').first}'
+                              : 'Welcome back guest', // just incase firebase becomes dumb
                           style: const TextStyle(
-                            fontSize: 16,
+                            fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color: Colors.white,
                           ),
@@ -96,7 +92,9 @@ class HeaderSection extends StatelessWidget {
                     Row(
                       children: [
                         HeaderButton(
-                          icon: isdarkMode ? Icons.light_mode : Icons.dark_mode,
+                          icon: isdarkMode
+                              ? Icons.light_mode_outlined
+                              : Icons.dark_mode_outlined,
                           onTap: toggleTheme,
                         ),
                         Stack(
