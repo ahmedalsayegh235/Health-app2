@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:health/firebase_options.dart';
+import 'package:health/providers/sensor_provider.dart';
 import 'package:health/providers/user_provider.dart';
 import 'views/splash_screen_views.dart';
 import 'package:health/views/home.dart';
@@ -19,6 +20,7 @@ runApp(
     providers: [
       ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ChangeNotifierProvider(create: (_) => UserProvider()), //for the stupid user
+      ChangeNotifierProvider(create: (_) => SensorProvider())
     ],
     child: const MainApp(),
   ),
