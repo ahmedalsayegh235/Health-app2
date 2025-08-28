@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../../helpers/app_theme.dart';
 import '../../../widgets/metric_card.dart';
+import '../../../../providers/sensor_provider.dart';
+import '../../../../models/Reading.dart';
 
 class HealthMetricsSection extends StatelessWidget {
-  final TickerProvider vsync; 
+  final TickerProvider vsync;
   final bool isDarkMode;
 
   const HealthMetricsSection({
@@ -27,43 +30,84 @@ class HealthMetricsSection extends StatelessWidget {
         ),
         const SizedBox(height: 20),
 
-        // First Row
         Row(
           children: [
+            // Heart Rate (last + previous)
             Expanded(
-              child: MetricCard(
-                icon: Icons.favorite,
-                iconColor: Colors.red,
-                title: "Heart Rate",
-                value: 78,
-                previousValue: 50,
-                unit: "bpm",
-                isDarkMode: isDarkMode,
-                animationController: AnimationController(
-                  vsync: vsync,
-                  duration: const Duration(milliseconds: 150),
-                ),
-                onTap: () {},
+              child: StreamBuilder<List<HealthReading>>(
+                stream: Provider.of<SensorProvider>(context, listen: false).heartRateStream(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return _buildLoadingCard(
+                      icon: Icons.favorite,
+                      color: Colors.red,
+                      title: "Heart Rate",
+                      unit: "bpm",
+                    );
+                  }
+
+                  final readings = snapshot.data!;
+                  final latest = readings.first.value.toInt();
+                  final previous = readings.length > 1 ? readings[1].value.toInt() : 0;
+
+                  return MetricCard(
+                    icon: Icons.favorite,
+                    iconColor: Colors.red,
+                    title: "Heart Rate",
+                    value: latest.toDouble(),
+                    previousValue: previous.toDouble(),
+                    unit: "bpm",
+                    isDarkMode: isDarkMode,
+                    animationController: AnimationController(
+                      vsync: vsync,
+                      duration: const Duration(milliseconds: 150),
+                    ),
+                    onTap: () {},
+                  );
+                },
               ),
             ),
             const SizedBox(width: 12),
+
+            // SpO₂ (last + previous)
             Expanded(
-              child: MetricCard(
-                icon: Icons.water_drop_outlined,
-                iconColor: Colors.blue,
-                title: "SpO₂",
-                value: 98,
-                previousValue: 97,
-                unit: "%",
-                isDarkMode: isDarkMode,
-                animationController: AnimationController(
-                  vsync: vsync,
-                  duration: const Duration(milliseconds: 150),
-                ),
-                onTap: () {},
+              child: StreamBuilder<List<HealthReading>>(
+                stream: Provider.of<SensorProvider>(context, listen: false).spo2Stream(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return _buildLoadingCard(
+                      icon: Icons.water_drop_outlined,
+                      color: Colors.blue,
+                      title: "SpO₂",
+                      unit: "%",
+                    );
+                  }
+
+                  final readings = snapshot.data!;
+                  final latest = readings.first.value.toInt();
+                  final previous = readings.length > 1 ? readings[1].value.toInt() : 0;
+
+                  return MetricCard(
+                    icon: Icons.water_drop_outlined,
+                    iconColor: Colors.blue,
+                    title: "SpO₂",
+                    value: latest.toDouble(),
+                    previousValue: previous.toDouble(),
+                    unit: "%",
+                    isDarkMode: isDarkMode,
+                    animationController: AnimationController(
+                      vsync: vsync,
+                      duration: const Duration(milliseconds: 150),
+                    ),
+                    onTap: () {},
+                  );
+                },
               ),
             ),
             const SizedBox(width: 12),
+
+            //  Keep static Weight for now
+            //TODO: add in user class with constuctor
             Expanded(
               child: MetricCard(
                 icon: Icons.monitor_weight_outlined,
@@ -84,7 +128,8 @@ class HealthMetricsSection extends StatelessWidget {
         ),
         const SizedBox(height: 12),
 
-        // Second Row
+        // Second Row (still static for now)
+        //TODO: fix the ecg values here 
         Row(
           children: [
             Expanded(
@@ -140,6 +185,29 @@ class HealthMetricsSection extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+
+  /// just a placeholder card while waiting for Firestore data
+  Widget _buildLoadingCard({
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String unit,
+  }) {
+    return MetricCard(
+      icon: icon,
+      iconColor: color,
+      title: title,
+      value: 0,
+      previousValue: 0,
+      unit: unit,
+      isDarkMode: isDarkMode,
+      animationController: AnimationController(
+        vsync: vsync,
+        duration: const Duration(milliseconds: 150),
+      ),
+      onTap: () {},
     );
   }
 }
