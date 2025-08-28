@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:health/helpers/app_theme.dart';
 import 'package:health/models/Reading.dart';
-import 'package:health/views/tabs/widgets/activity/widgets/ecg/widgets/reading_card.dart';
+
 
 
 class PreviousReadings extends StatelessWidget {
@@ -60,13 +60,6 @@ class PreviousReadings extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 16),
-        ...readings.take(5).map(
-          (reading) => ECGReadingCard(
-            reading: reading,
-            isDark: isDark,
-            onTap: onTap,
-          ),
-        ),
       ],
     );
   }

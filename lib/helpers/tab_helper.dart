@@ -54,4 +54,23 @@ String formatTime(DateTime dateTime) {
     return 'NORMAL';
   }
 
+
+ Color getQualityColor(double quality) {
+    if (quality >= 0.8) return Colors.green;
+    if (quality >= 0.6) return Colors.orange;
+    return Colors.red;
+  }
+
+  String getRhythmShort(String rhythm) {
+    switch (rhythm.toLowerCase()) {
+      case 'normal sinus rhythm':
+        return 'Normal';
+      case 'bradycardia':
+        return 'Slow';
+      case 'tachycardia':
+        return 'Fast';
+      default:
+        return rhythm.length > 10 ? '${rhythm.substring(0, 10)}...' : rhythm;
+    }
+  }
   
