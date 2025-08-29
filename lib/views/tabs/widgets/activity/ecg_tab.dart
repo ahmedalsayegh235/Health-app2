@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:health/helpers/tab_helper.dart';
+import 'package:health/views/tabs/widgets/activity/widgets/ecg/previous_reading_ecg.dart';
 import 'package:health/views/tabs/widgets/activity/widgets/ecg/realtime_ecg.dart';
+import 'package:health/views/tabs/widgets/activity/widgets/reading_diaglog.dart';
 import 'package:provider/provider.dart';
 import 'package:health/components/custom_button.dart';
 import 'package:health/helpers/app_theme.dart';
@@ -18,6 +20,7 @@ class ECGTab extends StatefulWidget {
 }
 
 class _ECGTabState extends State<ECGTab> with TickerProviderStateMixin {
+  bool _showAllReadings = false;
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
@@ -62,6 +65,62 @@ class _ECGTabState extends State<ECGTab> with TickerProviderStateMixin {
       );
     }
   }
+
+  void _showReadingDetail(HealthReading reading) {
+    showDialog(
+      context: context,
+      builder: (context) => ReadingDetailDialog(
+        title: 'ECG',
+        reading: reading,
+        isDark: widget.isDark,
+        unit: 'bpm',
+       
+        color: Colors.green,
+      ),
+    );
+  }
+
+  String _getRhythmFromReading(HealthReading reading) {
+    // Get rhythm from metadata if available, otherwise from note
+    if (reading.metadata != null && reading.metadata!['rhythm'] != null) {
+      return reading.metadata!['rhythm'].toString();
+    }
+    
+    // Parse from note as fallback
+    final note = reading.note ?? '';
+    final rhythmMatch = RegExp(r'Rhythm: ([^|]+)').firstMatch(note);
+    return rhythmMatch?.group(1)?.trim() ?? 'Unknown';
+  }
+
+  int _getQrsCountFromReading(HealthReading reading) {
+    // Get QRS count from metadata if available, otherwise from note
+    if (reading.metadata != null && reading.metadata!['qrsCount'] != null) {
+      return (reading.metadata!['qrsCount'] as num).toInt();
+    }
+    
+    // Parse from note as fallback
+    final note = reading.note ?? '';
+    final qrsMatch = RegExp(r'QRS count: (\d+)').firstMatch(note);
+    return int.tryParse(qrsMatch?.group(1) ?? '0') ?? 0;
+  }
+
+  String _getRhythmShort(String fullRhythm) {
+    switch (fullRhythm) {
+      case 'Normal Sinus Rhythm':
+        return 'Normal';
+      case 'Bradycardia':
+        return 'Slow';
+      case 'Tachycardia':
+        return 'Fast';
+      case 'Irregular Rhythm':
+        return 'Irregular';
+      case 'Poor Signal Quality':
+        return 'Poor Signal';
+      default:
+        return 'Unknown';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<SensorProvider>(
@@ -124,7 +183,7 @@ class _ECGTabState extends State<ECGTab> with TickerProviderStateMixin {
                           Column(
                             children: [
                               Text(
-                                '${currentReading.calculatedHeartRate?.toInt() ?? '--'}',
+                                currentReading.value.toStringAsFixed(1),
                                 style: TextStyle(
                                   fontSize: 28,
                                   fontWeight: FontWeight.bold,
@@ -151,7 +210,7 @@ class _ECGTabState extends State<ECGTab> with TickerProviderStateMixin {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          currentReading.rhythmClassification,
+                          _getRhythmFromReading(currentReading),
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -252,7 +311,7 @@ class _ECGTabState extends State<ECGTab> with TickerProviderStateMixin {
                     Expanded(
                       child: ECGInfoCard(
                         title: 'Heart Rate',
-                        value: '${currentReading.calculatedHeartRate?.toInt() ?? '--'} BPM',
+                        value: '${currentReading.value.toInt()} BPM',
                         icon: Icons.favorite,
                         color: Colors.red,
                         isDark: widget.isDark,
@@ -262,7 +321,7 @@ class _ECGTabState extends State<ECGTab> with TickerProviderStateMixin {
                     Expanded(
                       child: ECGInfoCard(
                         title: 'Rhythm',
-                        value: getRhythmShort(currentReading.rhythmClassification),
+                        value: _getRhythmShort(_getRhythmFromReading(currentReading)),
                         icon: Icons.graphic_eq,
                         color: Colors.green,
                         isDark: widget.isDark,
@@ -276,7 +335,7 @@ class _ECGTabState extends State<ECGTab> with TickerProviderStateMixin {
                     Expanded(
                       child: ECGInfoCard(
                         title: 'QRS Count',
-                        value: '${currentReading.qrsCount}',
+                        value: '${_getQrsCountFromReading(currentReading)}',
                         icon: Icons.show_chart,
                         color: Colors.blue,
                         isDark: widget.isDark,
@@ -318,6 +377,45 @@ class _ECGTabState extends State<ECGTab> with TickerProviderStateMixin {
               ),
 
               const SizedBox(height: 24),
+
+              // Previous Readings
+              StreamBuilder<List<HealthReading>>(
+                stream: Provider.of<SensorProvider>(context, listen: false).ecgStream(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return Text(
+                      'No previous ECG readings available.',
+                      style: TextStyle(color: AppTheme.textSecondaryColor(widget.isDark)),
+                    );
+                  }
+
+                  final readings = snapshot.data!;
+                  final displayReadings = _showAllReadings ? readings : readings.take(5);
+
+                  return Column(
+                    children: [
+                      ...displayReadings.map((reading) => EcgReadingCard(
+                            reading: reading,
+                            isDark: widget.isDark,
+                            onTap: _showReadingDetail,
+                            formatTime: formatTime,
+                          )),
+                      if (readings.length > 5)
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _showAllReadings = !_showAllReadings;
+                            });
+                          },
+                          child: Text(
+                            _showAllReadings ? "Show Less" : "Show All",
+                            style: TextStyle(color: Colors.green),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
             ],
           ),
         );

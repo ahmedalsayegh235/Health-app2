@@ -35,7 +35,10 @@ class HealthMetricsSection extends StatelessWidget {
             // Heart Rate (last + previous)
             Expanded(
               child: StreamBuilder<List<HealthReading>>(
-                stream: Provider.of<SensorProvider>(context, listen: false).heartRateStream(),
+                stream: Provider.of<SensorProvider>(
+                  context,
+                  listen: false,
+                ).heartRateStream(),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData || snapshot.data!.isEmpty) {
                     return _buildLoadingCard(
@@ -48,7 +51,9 @@ class HealthMetricsSection extends StatelessWidget {
 
                   final readings = snapshot.data!;
                   final latest = readings.first.value.toInt();
-                  final previous = readings.length > 1 ? readings[1].value.toInt() : 0;
+                  final previous = readings.length > 1
+                      ? readings[1].value.toInt()
+                      : 0;
 
                   return MetricCard(
                     icon: Icons.favorite,
@@ -72,7 +77,10 @@ class HealthMetricsSection extends StatelessWidget {
             // SpO₂ (last + previous)
             Expanded(
               child: StreamBuilder<List<HealthReading>>(
-                stream: Provider.of<SensorProvider>(context, listen: false).spo2Stream(),
+                stream: Provider.of<SensorProvider>(
+                  context,
+                  listen: false,
+                ).spo2Stream(),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData || snapshot.data!.isEmpty) {
                     return _buildLoadingCard(
@@ -85,7 +93,9 @@ class HealthMetricsSection extends StatelessWidget {
 
                   final readings = snapshot.data!;
                   final latest = readings.first.value.toInt();
-                  final previous = readings.length > 1 ? readings[1].value.toInt() : 0;
+                  final previous = readings.length > 1
+                      ? readings[1].value.toInt()
+                      : 0;
 
                   return MetricCard(
                     icon: Icons.water_drop_outlined,
@@ -129,25 +139,52 @@ class HealthMetricsSection extends StatelessWidget {
         const SizedBox(height: 12),
 
         // Second Row (still static for now)
-        //TODO: fix the ecg values here 
+        //TODO: fix the ecg values here
         Row(
           children: [
             Expanded(
-              child: MetricCard(
-                icon: Icons.show_chart,
-                iconColor: Colors.purple,
-                title: "ECG",
-                value: 85,
-                previousValue: 80,
-                unit: "bpm",
-                isDarkMode: isDarkMode,
-                animationController: AnimationController(
-                  vsync: vsync,
-                  duration: const Duration(milliseconds: 150),
-                ),
-                onTap: () {},
+              child: StreamBuilder<List<HealthReading>>(
+                stream: Provider.of<SensorProvider>(
+                  context,
+                  listen: false,
+                ).ecgStream(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return _buildLoadingCard(
+                      icon: Icons.monitor_heart,
+                      color: Colors.red,
+                      title: "ECG",
+                      unit: "BPM",
+                    );
+                  }
+
+                  final readings = snapshot.data!;
+                  final latest = readings.first.value
+                      .toDouble(); // latest reading
+                  final previous = readings.length > 1
+                      ? readings[1].value.toDouble()
+                      : 0.0; // previous reading
+
+                  return MetricCard(
+                    icon: Icons.monitor_heart,
+                    iconColor: Colors.purple,
+                    title: "ECG",
+                    value: latest,
+                    previousValue: previous,
+                    unit: "BPM",
+                    isDarkMode: isDarkMode,
+                    animationController: AnimationController(
+                      vsync: vsync,
+                      duration: const Duration(milliseconds: 150),
+                    ),
+                    onTap: () {
+                     // nav to HR tab
+                    },
+                  );
+                },
               ),
             ),
+
             const SizedBox(width: 12),
             Expanded(
               child: MetricCard(

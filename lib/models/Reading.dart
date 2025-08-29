@@ -96,45 +96,6 @@ class HealthReading {
     return 'Normal Sinus Rhythm';
   }
 
-  /// Create ECG reading with samples
-  factory HealthReading.createECGReading({
-    required List<double> samples,
-    required double sampleRate,
-    required double duration,
-    String? note,
-    double? heartRate,
-    int? qrsCount,
-    double? signalQuality,
-    String? rhythm,
-  }) {
-    // Calculate peak amplitude for value
-    final peakAmplitude = samples.isNotEmpty 
-        ? samples.reduce((curr, next) => curr.abs() > next.abs() ? curr : next)
-        : 0.0;
-
-    return HealthReading(
-      timestamp: DateTime.now(),
-      value: peakAmplitude,
-      note: note ?? 'ECG Recording - ${duration.toInt()}s',
-      type: 'ecg',
-      metadata: {
-        'samples': samples,
-        'sampleRate': sampleRate,
-        'duration': duration,
-        'heartRate': heartRate,
-        'qrsCount': qrsCount,
-        'signalQuality': signalQuality ?? 1.0,
-        'rhythm': rhythm ?? 'Normal Sinus Rhythm',
-        'leadConfiguration': 'Lead I', // Default lead
-        'filterSettings': {
-          'highPass': 0.5,
-          'lowPass': 40.0,
-          'notch': 50.0, // 50Hz notch filter
-        }
-      },
-    );
-  }
-
   /// Copy with new values
   HealthReading copyWith({
     String? id,
