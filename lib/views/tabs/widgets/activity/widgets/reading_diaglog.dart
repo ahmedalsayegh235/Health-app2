@@ -262,21 +262,23 @@ class _ReadingDetailDialogState extends State<ReadingDetailDialog>
           const SizedBox(height: 20),
 
           // Additional Info
-          _buildInfoRow('Time', _formatTime(widget.reading.timestamp)),
+          _buildInfoRow('Time: ', _formatTime(widget.reading.timestamp)),
           const SizedBox(height: 8),
-          _buildInfoRow('Date', _formatDate(widget.reading.timestamp)),
+          _buildInfoRow('Date: ', _formatDate(widget.reading.timestamp)),
           const SizedBox(height: 8),
-          _buildInfoRow('Status', widget.reading.note),
+          _buildInfoRow('Status: ', widget.reading.note),
         ],
       ),
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
+Widget _buildInfoRow(String label, String value) {
+  return Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      SizedBox(
+        width: 80, // fixed width for labels to align neatly
+        child: Text(
           label,
           style: TextStyle(
             fontSize: 14,
@@ -284,17 +286,28 @@ class _ReadingDetailDialogState extends State<ReadingDetailDialog>
             fontWeight: FontWeight.w500,
           ),
         ),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 14,
-            color: AppTheme.textColor(widget.isDark),
-            fontWeight: FontWeight.w600,
-          ),
+      ),
+      const SizedBox(width: 8),
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 12,
+                color: AppTheme.textColor(widget.isDark),
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.right,
+              softWrap: true,
+            ),
+          ],
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
+}
 
   Widget _buildDetailGraph() {
     return Container(
@@ -459,7 +472,7 @@ class _ReadingDetailDialogState extends State<ReadingDetailDialog>
 
   String _formatValue(double value) {
     if (widget.title.toLowerCase() == 'ecg') {
-      return (value * 100).toStringAsFixed(0);
+      return (value).toStringAsFixed(2);
     }
     return value.toStringAsFixed(0);
   }

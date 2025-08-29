@@ -17,7 +17,7 @@ class SensorProvider with ChangeNotifier {
 
   // ECG Configuration Constants
   static const double ECG_SAMPLE_RATE = 250.0; // Hz - Medical standard
-  static const double RECORDING_DURATION = 10.0; // Reduced to 10 seconds for faster processing
+  static const double RECORDING_DURATION = 30.0; // Full 30 seconds for accurate BPM
   static final int EXPECTED_SAMPLES = (ECG_SAMPLE_RATE * RECORDING_DURATION).toInt();
   static const double MIN_SIGNAL_QUALITY = 0.7;
   
@@ -232,8 +232,8 @@ class SensorProvider with ChangeNotifier {
       return (60.0 / avgRRInterval).clamp(30.0, 200.0);
     }
     
-    // Fallback to QRS count method
-    final bpm = (_qrsCount / (elapsedSeconds / 60.0));
+    // Fallback to QRS count method - more accurate calculation
+    final bpm = (_qrsCount / elapsedSeconds) * 60.0;
     return bpm.clamp(30.0, 200.0);
   }
 
@@ -355,39 +355,37 @@ class SensorProvider with ChangeNotifier {
 
   void _finishEcgRecording() {
     if (!_isEcgRecording) return;
-    
+
     _isEcgRecording = false;
     _qualityCheckTimer?.cancel();
-    
+
     if (_ecgRecordingBuffer.length < EXPECTED_SAMPLES * 0.5) {
       print('Warning: ECG recording incomplete');
       notifyListeners();
       return;
     }
-    
+
     final calculatedHR = _calculateHeartRateFromEcg();
     final rhythm = _classifyRhythm();
-    
-    // Only store essential ECG data to Firebase - downsample for storage efficiency
-    final downsampleRate = 4; // Store every 4th sample (62.5 Hz instead of 250 Hz)
-    final downsampledData = <double>[];
-    for (int i = 0; i < _ecgRecordingBuffer.length; i += downsampleRate) {
-      downsampledData.add(_ecgRecordingBuffer[i]);
-    }
-    
-    final reading = HealthReading.createECGReading(
-      samples: downsampledData,
-      sampleRate: ECG_SAMPLE_RATE / downsampleRate,
-      duration: RECORDING_DURATION,
-      heartRate: calculatedHR,
-      qrsCount: _qrsCount,
-      signalQuality: _signalQuality,
-      rhythm: rhythm,
-      note: 'ECG - $rhythm (${calculatedHR.toInt()} BPM)',
+
+    // Create ECG reading with BPM as the main value and store rhythm in metadata
+    final reading = HealthReading(
+      timestamp: DateTime.now(),
+      value: calculatedHR, // BPM as the main value
+      note: 'QRS count: $_qrsCount | Rhythm: $rhythm | Duration: ${RECORDING_DURATION}s',
+      type: 'ecg',
+      metadata: {
+        'qrsCount': _qrsCount,
+        'rhythm': rhythm,
+        'signalQuality': _signalQuality,
+        'rrIntervals': _rRIntervals.length,
+        'recordingDuration': RECORDING_DURATION,
+      },
     );
-    
+
     _lastEcgReading = reading;
-    
+    _saveToFirebase(reading);
+
     _currentCollectionType = null;
     notifyListeners();
   }
@@ -495,4 +493,25 @@ class SensorProvider with ChangeNotifier {
             }).where((reading) => reading != null).cast<HealthReading>().toList());
   }
 
+  Stream<List<HealthReading>> ecgStream(){
+    final userId = UserModel.userData.id;
+    if (userId == null) return Stream.value(<HealthReading>[]);
+
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .collection('health_readings')
+        .where('type', isEqualTo: 'ecg')
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) {
+              try {
+                return HealthReading.fromJson(doc.data());
+              } catch (e) {
+                print("Error parsing reading: $e");
+                return null;
+              }
+            }).where((reading) => reading != null).cast<HealthReading>().toList());
+
+  }
 }
