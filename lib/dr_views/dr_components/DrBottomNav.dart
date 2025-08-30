@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../helpers/app_theme.dart';
 
-class BottomNav extends StatelessWidget {
+class DrBottomNav extends StatelessWidget {
   final bool isDarkMode;
   final int currentIndex;
   final ValueChanged<int> onTap;
   final AnimationController navAnimationController;
 
-  const BottomNav({
+  const DrBottomNav({
     super.key,
     required this.isDarkMode,
     required this.currentIndex,
@@ -68,22 +68,20 @@ class BottomNav extends StatelessWidget {
           items: [
             _buildNavItem(
               Icons.calendar_today,
-              'Appointment',
+              'drappointment',
               0,
               iconSize,
               iconPadding,
             ),
-            _buildNavItem(Icons.timeline, 'Activity', 1, iconSize, iconPadding),
-
-            _buildNavItem(Icons.home, 'Home', 2, iconSize, iconPadding),
+            _buildNavItem(Icons.home, 'drhome', 1, iconSize, iconPadding),
             _buildNavItem(
               Icons.chat_bubble_outline,
-              'Chat',
-              3,
+              'drchat',
+              2,
               iconSize,
               iconPadding,
             ),
-            _buildNavItem(Icons.person, 'Profile', 4, iconSize, iconPadding),
+            // _buildNavItem(Icons.person, 'Profile', 2, iconSize, iconPadding),
           ],
         ),
       ),
