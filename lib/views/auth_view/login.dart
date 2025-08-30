@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:health/helpers/theme_provider.dart';
@@ -35,41 +36,60 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     _authAnimationController = AuthAnimationController(vsync: this);
     _authAnimationController.startAnimations();
   }
-  Future<void> _login() async {
-    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      setState(() {
-        _errorMessage = "Please fill in all fields.";
-      });
-      return;
-    }
-
+Future<void> _login() async {
+  if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
     setState(() {
-      _isLoading = true;
-      _errorMessage = null;
+      _errorMessage = "Please fill in all fields.";
     });
-
-    try {
-      User? user = await _authController.signIn(
-        _emailController.text.trim(),
-        _passwordController.text.trim(),
-      );
-
-      if (user != null) {
-        // Start exit animation to go to home page 
-        await _authAnimationController.exitController.forward();
-        // Navigate to home after animation completes
-        Navigator.pushReplacementNamed(context, 'home');
-      }
-    } catch (e) {
-      setState(() {
-        _errorMessage = e.toString();
-      });
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
+    return;
   }
+
+  setState(() {
+    _isLoading = true;
+    _errorMessage = null;
+  });
+
+  try {
+    User? user = await _authController.signIn(
+      _emailController.text.trim(),
+      _passwordController.text.trim(),
+    );
+
+    if (user != null) {
+      // 🔹 get user data from Firestore
+      final userDoc = await FirebaseFirestore.instance
+          .collection("users")   
+          .doc(user.uid)
+          .get();
+
+      if (userDoc.exists) {
+        final role = userDoc.data()?['role'];
+
+        // Start exit animation
+        await _authAnimationController.exitController.forward();
+
+        // Navigate based on role
+        if (role == 'doctor') {
+          Navigator.pushReplacementNamed(context, 'drhome');
+        } else {
+          Navigator.pushReplacementNamed(context, 'home');
+        }
+      } else {
+        setState(() {
+          _errorMessage = "User data not found.";
+        });
+      }
+    }
+  } catch (e) {
+    setState(() {
+      _errorMessage = e.toString();
+    });
+  } finally {
+    setState(() {
+      _isLoading = false;
+    });
+  }
+}
 
   void _toggleTheme() {
     Provider.of<ThemeProvider>(context, listen: false).toggleTheme();
