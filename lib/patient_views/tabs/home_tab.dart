@@ -1,8 +1,8 @@
 // lib/views/home_view/hometab.dart
 import 'package:flutter/material.dart';
 import 'package:health/providers/user_provider.dart';
-import 'package:health/views/splash_screen_views.dart';
-import 'package:health/views/tabs/widgets/home/header_section_home.dart';
+import 'package:health/patient_views/splash_screen_views.dart';
+import 'package:health/patient_views/tabs/widgets/home/header_section_home.dart';
 import 'package:provider/provider.dart';
 import '../../helpers/theme_provider.dart';
 import '../../controllers/animation/home_animation_controller.dart';

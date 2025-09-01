@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../helpers/app_theme.dart';
-import '../../../helpers/floating_medical_icons.dart';
+import '../../helpers/app_theme.dart';
+import '../../helpers/floating_medical_icons.dart';
 
 class AnimatedBackground extends StatelessWidget {
   final AnimationController backgroundController;

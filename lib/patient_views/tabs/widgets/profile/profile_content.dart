@@ -3,8 +3,8 @@ import 'package:health/components/custom_button.dart';
 import 'package:health/components/custom_text_formfield.dart';
 import 'package:health/helpers/app_theme.dart';
 import 'package:health/models/user_model.dart';
-import 'package:health/views/tabs/widgets/profile/profile_picture_profile.dart';
-import 'package:health/views/tabs/widgets/profile/readonlyfield_profile.dart';
+import 'package:health/patient_views/tabs/widgets/profile/profile_picture_profile.dart';
+import 'package:health/patient_views/tabs/widgets/profile/readonlyfield_profile.dart';
 
 class ProfileContent extends StatelessWidget {
   final UserModel user;

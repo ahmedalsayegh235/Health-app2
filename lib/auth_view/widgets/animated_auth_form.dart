@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../helpers/app_theme.dart';
+import '../../helpers/app_theme.dart';
 
 class AnimatedAuthForm extends StatelessWidget {
   final Animation<double> slideController;

@@ -5,43 +5,38 @@ import 'package:health/helpers/app_theme.dart';
 import 'package:health/helpers/tab_helper.dart';
 import 'package:health/models/Reading.dart';
 import 'package:health/providers/sensor_provider.dart';
-import 'package:health/views/tabs/widgets/activity/widgets/reading_diaglog.dart';
-import 'package:health/views/tabs/widgets/activity/widgets/spo2/reading_card.dart';
+import 'package:health/patient_views/tabs/widgets/activity/widgets/heart/reading_card.dart';
+import 'package:health/patient_views/tabs/widgets/activity/widgets/reading_diaglog.dart';
 import 'package:provider/provider.dart';
 
-class SpO2Tab extends StatefulWidget {
+class HeartRateTab extends StatefulWidget {
   final bool isDark;
 
-  const SpO2Tab({super.key, required this.isDark});
+  const HeartRateTab({super.key, required this.isDark});
 
   @override
-  State<SpO2Tab> createState() => _SpO2TabState();
+  State<HeartRateTab> createState() => _HeartRateTabState();
 }
 
-class _SpO2TabState extends State<SpO2Tab> with SingleTickerProviderStateMixin {
+class _HeartRateTabState extends State<HeartRateTab>
+    with SingleTickerProviderStateMixin {
   bool _isRecording = false;
   bool _showAllReadings = false;
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
-  late Animation<Color?> _colorAnimation;
 
   @override
   void initState() {
     super.initState();
 
     _pulseController = AnimationController(
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 800),
       vsync: this,
     );
 
-    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.3).animate(
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
-
-    _colorAnimation = ColorTween(begin: Colors.blue, end: Colors.lightBlue)
-        .animate(
-          CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
-        );
   }
 
   @override
@@ -60,7 +55,7 @@ class _SpO2TabState extends State<SpO2Tab> with SingleTickerProviderStateMixin {
     _pulseController.repeat(reverse: true);
 
     final sensorProvider = context.read<SensorProvider>();
-    sensorProvider.startCollection('spo2');
+    sensorProvider.startCollection('heart_rate');
 
     Future.delayed(const Duration(seconds: 30), () {
       if (mounted && _isRecording) {
@@ -79,13 +74,15 @@ class _SpO2TabState extends State<SpO2Tab> with SingleTickerProviderStateMixin {
     _pulseController.reset();
 
     final sensorProvider = context.read<SensorProvider>();
-    final lastReading = sensorProvider.lastSpo2;
+    final lastReading = sensorProvider.lastHeartRate;
 
     if (lastReading != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('SpO2 recorded: ${lastReading.value.toInt()}%'),
-          backgroundColor: Colors.blue,
+          content: Text(
+            'Heart Rate recorded: ${lastReading.value.toInt()} bpm',
+          ),
+          backgroundColor: AppTheme.lightgreen,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -99,11 +96,11 @@ class _SpO2TabState extends State<SpO2Tab> with SingleTickerProviderStateMixin {
     showDialog(
       context: context,
       builder: (context) => ReadingDetailDialog(
-        title: 'SpO2',
+        title: 'Heart Rate',
         reading: reading,
         isDark: widget.isDark,
-        unit: '%',
-        color: Colors.blue,
+        unit: 'bpm',
+        color: Colors.red,
       ),
     );
   }
@@ -114,17 +111,18 @@ class _SpO2TabState extends State<SpO2Tab> with SingleTickerProviderStateMixin {
     final userId = sensorProvider.userId;
 
     return StreamBuilder<List<HealthReading>>(
-      stream: sensorProvider.spo2Stream(),
+      stream: sensorProvider.heartRateStream(),
       builder: (context, snapshot) {
-        print("SpO2 StreamBuilder state: ${snapshot.connectionState}");
-        print("SpO2 Has data: ${snapshot.hasData}");
-        print("SpO2 Data length: ${snapshot.data?.length ?? 0}");
+        // for testing the syream builder
+        print("StreamBuilder state: ${snapshot.connectionState}");
+        print("Has data: ${snapshot.hasData}");
+        print("Data length: ${snapshot.data?.length ?? 0}");
 
         if (snapshot.hasError) {
-          print("SpO2 StreamBuilder error: ${snapshot.error}");
+          print("StreamBuilder error: ${snapshot.error}");
           return Center(
             child: Text(
-              'Error loading SpO2 readings: ${snapshot.error}',
+              'Error loading readings: ${snapshot.error}',
               style: TextStyle(color: AppTheme.textColor(widget.isDark)),
             ),
           );
@@ -144,15 +142,15 @@ class _SpO2TabState extends State<SpO2Tab> with SingleTickerProviderStateMixin {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      Colors.blue.withValues(alpha: 0.1),
-                      Colors.lightBlue.withValues(alpha: 0.05),
+                      Colors.red.withValues(alpha: 0.1),
+                      Colors.pink.withValues(alpha: 0.05),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: Colors.blue.withValues(alpha: 0.2),
+                    color: Colors.red.withValues(alpha: 0.2),
                     width: 1,
                   ),
                 ),
@@ -170,21 +168,19 @@ class _SpO2TabState extends State<SpO2Tab> with SingleTickerProviderStateMixin {
                               gradient: LinearGradient(
                                 colors: _isRecording
                                     ? [
-                                        _colorAnimation.value!.withValues(
-                                          alpha: 0.8,
-                                        ),
-                                        Colors.lightBlue.withValues(alpha: 0.6),
+                                        Colors.red.withValues(alpha: 0.8),
+                                        Colors.pink.withValues(alpha: 0.6),
                                       ]
                                     : [
-                                        Colors.blue.withValues(alpha: 0.2),
-                                        Colors.lightBlue.withValues(alpha: 0.1),
+                                        Colors.red.withValues(alpha: 0.2),
+                                        Colors.pink.withValues(alpha: 0.1),
                                       ],
                               ),
                             ),
                             child: Icon(
-                              Icons.air,
+                              Icons.favorite,
                               size: 48,
-                              color: _isRecording ? Colors.white : Colors.blue,
+                              color: _isRecording ? Colors.white : Colors.red,
                             ),
                           ),
                         );
@@ -192,29 +188,16 @@ class _SpO2TabState extends State<SpO2Tab> with SingleTickerProviderStateMixin {
                     ),
                     const SizedBox(height: 16),
                     if (currentReading != null && !_isRecording) ...[
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            '${currentReading.value.toInt()}',
-                            style: TextStyle(
-                              fontSize: 48,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.textColor(widget.isDark),
-                            ),
-                          ),
-                          Text(
-                            '%',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.textSecondaryColor(widget.isDark),
-                            ),
-                          ),
-                        ],
+                      Text(
+                        '${currentReading.value.toInt()}',
+                        style: TextStyle(
+                          fontSize: 48,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.textColor(widget.isDark),
+                        ),
                       ),
                       Text(
-                        'SpO2',
+                        'BPM',
                         style: TextStyle(
                           fontSize: 18,
                           color: AppTheme.textSecondaryColor(widget.isDark),
@@ -231,7 +214,7 @@ class _SpO2TabState extends State<SpO2Tab> with SingleTickerProviderStateMixin {
                       ),
                     ] else if (_isRecording) ...[
                       Text(
-                        'Measuring...',
+                        'Recording...',
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -239,36 +222,23 @@ class _SpO2TabState extends State<SpO2Tab> with SingleTickerProviderStateMixin {
                         ),
                       ),
                       Text(
-                        'Place finger on sensor',
+                        'Keep still',
                         style: TextStyle(
                           fontSize: 14,
                           color: AppTheme.textSecondaryColor(widget.isDark),
                         ),
                       ),
                     ] else ...[
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            '--',
-                            style: TextStyle(
-                              fontSize: 48,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.textSecondaryColor(widget.isDark),
-                            ),
-                          ),
-                          Text(
-                            '%',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.textSecondaryColor(widget.isDark),
-                            ),
-                          ),
-                        ],
+                      Text(
+                        '--',
+                        style: TextStyle(
+                          fontSize: 48,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.textSecondaryColor(widget.isDark),
+                        ),
                       ),
                       Text(
-                        'SpO2',
+                        'BPM',
                         style: TextStyle(
                           fontSize: 18,
                           color: AppTheme.textSecondaryColor(widget.isDark),
@@ -279,14 +249,14 @@ class _SpO2TabState extends State<SpO2Tab> with SingleTickerProviderStateMixin {
                     const SizedBox(height: 24),
                     CustomButton(
                       onPressed: userId != null ? _startRecording : null,
-                      text: _isRecording ? 'Stop Measuring' : 'Start Measuring',
+                      text: _isRecording ? 'Stop Recording' : 'Start Recording',
                       isLoading: false,
                       height: 50,
                       gradientColors: _isRecording
-                          ? [Colors.blue, Colors.lightBlue]
+                          ? [Colors.red, Colors.pink]
                           : [
-                              Colors.blue.withValues(alpha: 0.8),
-                              Colors.lightBlue.withValues(alpha: 0.6),
+                              Colors.red.withValues(alpha: 0.8),
+                              Colors.pink.withValues(alpha: 0.6),
                             ],
                       textStyle: const TextStyle(
                         fontSize: 16,
@@ -311,42 +281,12 @@ class _SpO2TabState extends State<SpO2Tab> with SingleTickerProviderStateMixin {
 
               const SizedBox(height: 24),
 
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: Colors.blue.withValues(alpha: 0.1),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.info_outline, color: Colors.blue, size: 20),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Normal SpO2 levels are 95-100%. Values below 90% may require medical attention.',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppTheme.textColor(widget.isDark),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
               CustomHealthGraph(
                 readings: readings,
-                unit: '%',
+                unit: 'bpm',
                 isDark: widget.isDark,
-                lineColor: Colors.blue,
-                title: 'SpO2',
+                lineColor: Colors.red,
+                title: 'Heart Rate',
               ),
 
               const SizedBox(height: 24),
@@ -364,10 +304,12 @@ class _SpO2TabState extends State<SpO2Tab> with SingleTickerProviderStateMixin {
                   ),
                   TextButton(
                     onPressed: () {
-                      _showAllReadings = !_showAllReadings;
+                      setState(() {
+                        _showAllReadings = !_showAllReadings;
+                      });
                     },
                     child: Text(
-                      _showAllReadings ? 'View Less' : 'View All',
+                      _showAllReadings ? 'View Less' : "View All",
                       style: TextStyle(
                         color: AppTheme.lightgreen,
                         fontWeight: FontWeight.w600,
@@ -394,7 +336,7 @@ class _SpO2TabState extends State<SpO2Tab> with SingleTickerProviderStateMixin {
                   child: Column(
                     children: [
                       Icon(
-                        Icons.air,
+                        Icons.favorite_border,
                         size: 48,
                         color: AppTheme.textSecondaryColor(widget.isDark),
                       ),
@@ -402,7 +344,7 @@ class _SpO2TabState extends State<SpO2Tab> with SingleTickerProviderStateMixin {
                       Text(
                         userId == null
                             ? 'Login to view readings'
-                            : 'No SpO2 readings yet',
+                            : 'No readings yet',
                         style: TextStyle(
                           fontSize: 16,
                           color: AppTheme.textSecondaryColor(widget.isDark),
@@ -410,7 +352,7 @@ class _SpO2TabState extends State<SpO2Tab> with SingleTickerProviderStateMixin {
                       ),
                       if (userId != null)
                         Text(
-                          'Start measuring to see your SpO2 data',
+                          'Start recording to see your heart rate data',
                           style: TextStyle(
                             fontSize: 14,
                             color: AppTheme.textSecondaryColor(widget.isDark),
@@ -425,15 +367,18 @@ class _SpO2TabState extends State<SpO2Tab> with SingleTickerProviderStateMixin {
                 reading: reading,
                 isDark: widget.isDark,
                 onTap: _showReadingDetail,
-                getSPo2StatusColor: getSPo2StatusColor,
-                getSPo2StatusText: getSPo2StatusText,
+                getHeartStatusColor: getHeartStatusColor,
+                getHeartStatusText: getHeartStatusText,
                 formatTime: formatTime,
               ),
             ),
+
             ],
           ),
         );
       },
     );
   }
+
+  
 }

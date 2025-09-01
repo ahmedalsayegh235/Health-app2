@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:health/controllers/animation/auth_animation_controller.dart';
 import 'package:health/helpers/theme_provider.dart';
-import 'package:health/views/auth_view/widgets/animated_background.dart';
+import 'package:health/auth_view/widgets/animated_background.dart';
 import 'package:provider/provider.dart';
 
 class SplashScreenViews extends StatefulWidget {

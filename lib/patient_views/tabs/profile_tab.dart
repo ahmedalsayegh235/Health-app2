@@ -3,9 +3,9 @@ import 'package:health/controllers/auth_controller.dart';
 import 'package:health/helpers/app_theme.dart';
 import 'package:health/models/user_model.dart';
 import 'package:health/providers/user_provider.dart';
-import 'package:health/views/tabs/widgets/profile/header_background_profile.dart';
-import 'package:health/views/tabs/widgets/profile/password_dialog_profile.dart';
-import 'package:health/views/tabs/widgets/profile/profile_content.dart';
+import 'package:health/patient_views/tabs/widgets/profile/header_background_profile.dart';
+import 'package:health/patient_views/tabs/widgets/profile/password_dialog_profile.dart';
+import 'package:health/patient_views/tabs/widgets/profile/profile_content.dart';
 import 'package:provider/provider.dart';
 
 class ProfileTab extends StatefulWidget {

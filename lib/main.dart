@@ -8,10 +8,10 @@ import 'package:health/dr_views/dr_home.dart';
 import 'package:health/firebase_options.dart';
 import 'package:health/providers/sensor_provider.dart';
 import 'package:health/providers/user_provider.dart';
-import 'views/splash_screen_views.dart';
-import 'package:health/views/home.dart';
-import 'package:health/views/auth_view/login.dart';
-import 'package:health/views/auth_view/signup.dart';
+import 'patient_views/splash_screen_views.dart';
+import 'package:health/patient_views/home.dart';
+import 'package:health/auth_view/login.dart';
+import 'package:health/auth_view/signup.dart';
 import 'package:provider/provider.dart';
 import 'helpers/theme_provider.dart';
 

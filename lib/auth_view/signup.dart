@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:health/components/custom_header_button.dart';
 import 'package:health/controllers/animation/auth_animation_controller.dart';
-import 'package:health/views/auth_view/widgets/animated_auth_form.dart';
-import 'package:health/views/auth_view/widgets/animated_background.dart';
-import 'package:health/views/auth_view/widgets/auth_switch_link.dart';
+import 'package:health/auth_view/widgets/animated_auth_form.dart';
+import 'package:health/auth_view/widgets/animated_background.dart';
+import 'package:health/auth_view/widgets/auth_switch_link.dart';
 import 'package:provider/provider.dart';
 import 'package:health/components/custom_button.dart';
 import 'package:health/components/custom_text_formfield.dart';
 import 'package:health/components/custom_dropdown_menu.dart';
 import 'package:health/helpers/app_theme.dart';
 import 'package:health/helpers/theme_provider.dart';
-import '../../controllers/auth_controller.dart';
+import '../controllers/auth_controller.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({Key? key}) : super(key: key);

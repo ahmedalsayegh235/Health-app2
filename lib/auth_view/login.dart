@@ -3,15 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:health/helpers/theme_provider.dart';
 import 'package:provider/provider.dart';
-import '../../controllers/auth_controller.dart';
-import '../../controllers/animation/auth_animation_controller.dart';
-import '../../helpers/app_theme.dart';
-import '../../components/custom_text_formfield.dart';
-import '../../components/custom_button.dart';
+import '../controllers/auth_controller.dart';
+import '../controllers/animation/auth_animation_controller.dart';
+import '../helpers/app_theme.dart';
+import '../components/custom_text_formfield.dart';
+import '../components/custom_button.dart';
 import 'widgets/animated_background.dart';
 import 'widgets/animated_auth_form.dart';
 import 'widgets/auth_switch_link.dart';
-import '../../components/custom_header_button.dart';
+import '../components/custom_header_button.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -38,16 +38,20 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   }
 Future<void> _login() async {
   if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-    setState(() {
-      _errorMessage = "Please fill in all fields.";
-    });
+    if (mounted) {
+      setState(() {
+        _errorMessage = "Please fill in all fields.";
+      });
+    }
     return;
   }
 
-  setState(() {
-    _isLoading = true;
-    _errorMessage = null;
-  });
+  if (mounted) {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+  }
 
   try {
     User? user = await _authController.signIn(
@@ -56,7 +60,7 @@ Future<void> _login() async {
     );
 
     if (user != null) {
-      // 🔹 get user data from Firestore
+      //  get user data from Firestore
       final userDoc = await FirebaseFirestore.instance
           .collection("users")   
           .doc(user.uid)
@@ -69,25 +73,32 @@ Future<void> _login() async {
         await _authAnimationController.exitController.forward();
 
         // Navigate based on role
+        //fix: use mounted to avoid memory leaks
         if (role == 'doctor') {
-          Navigator.pushReplacementNamed(context, 'drhome');
+          if (mounted) Navigator.pushReplacementNamed(context, 'drhome');
         } else {
-          Navigator.pushReplacementNamed(context, 'home');
+          if (mounted) Navigator.pushReplacementNamed(context, 'home');
         }
       } else {
-        setState(() {
-          _errorMessage = "User data not found.";
-        });
+        if (mounted) {
+          setState(() {
+            _errorMessage = "User data not found.";
+          });
+        }
       }
     }
   } catch (e) {
-    setState(() {
-      _errorMessage = e.toString();
-    });
+    if (mounted) {
+      setState(() {
+        _errorMessage = e.toString();
+      });
+    }
   } finally {
-    setState(() {
-      _isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 }
 

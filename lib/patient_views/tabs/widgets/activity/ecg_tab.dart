@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:health/helpers/tab_helper.dart';
-import 'package:health/views/tabs/widgets/activity/widgets/ecg/previous_reading_ecg.dart';
-import 'package:health/views/tabs/widgets/activity/widgets/ecg/realtime_ecg.dart';
-import 'package:health/views/tabs/widgets/activity/widgets/reading_diaglog.dart';
+import 'package:health/patient_views/tabs/widgets/activity/widgets/ecg/previous_reading_ecg.dart';
+import 'package:health/patient_views/tabs/widgets/activity/widgets/ecg/realtime_ecg.dart';
+import 'package:health/patient_views/tabs/widgets/activity/widgets/reading_diaglog.dart';
 import 'package:provider/provider.dart';
 import 'package:health/components/custom_button.dart';
 import 'package:health/helpers/app_theme.dart';
 import 'package:health/models/Reading.dart';
 import 'package:health/providers/sensor_provider.dart';
-import 'package:health/views/tabs/widgets/activity/widgets/ecg/widgets/info_card.dart';
+import 'package:health/patient_views/tabs/widgets/activity/widgets/ecg/widgets/info_card.dart';
 
 class ECGTab extends StatefulWidget {
   final bool isDark;

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:health/views/tabs/widgets/activity/device_tab.dart';
-import 'package:health/views/tabs/widgets/activity/ecg_tab.dart';
-import 'package:health/views/tabs/widgets/activity/heartrate_tab.dart';
-import 'package:health/views/tabs/widgets/activity/spo2_tab.dart';
-import 'package:health/views/tabs/widgets/activity/widgets/activity_header.dart';
+import 'package:health/patient_views/tabs/widgets/activity/device_tab.dart';
+import 'package:health/patient_views/tabs/widgets/activity/ecg_tab.dart';
+import 'package:health/patient_views/tabs/widgets/activity/heartrate_tab.dart';
+import 'package:health/patient_views/tabs/widgets/activity/spo2_tab.dart';
+import 'package:health/patient_views/tabs/widgets/activity/widgets/activity_header.dart';
 
 class ActivityTab extends StatefulWidget {
   final GlobalKey<ScaffoldState> scaffoldKey; 

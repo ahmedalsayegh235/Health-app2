@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:health/controllers/device_controller.dart';
 import 'package:health/helpers/Device_Tab_helpers.dart';
 import 'package:health/helpers/app_theme.dart';
-import 'package:health/views/tabs/widgets/activity/widgets/device/device_card.dart';
-import 'package:health/views/tabs/widgets/activity/widgets/device/quick_actions.dart';
-import 'package:health/views/tabs/widgets/activity/widgets/device/stats_card.dart';
+import 'package:health/patient_views/tabs/widgets/activity/widgets/device/device_card.dart';
+import 'package:health/patient_views/tabs/widgets/activity/widgets/device/quick_actions.dart';
+import 'package:health/patient_views/tabs/widgets/activity/widgets/device/stats_card.dart';
 
 class DevicesTab extends StatefulWidget {
   final bool isDark;

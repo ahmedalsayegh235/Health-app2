@@ -8,7 +8,7 @@ import 'package:health/dr_views/dr_components/dr_custom_drawer.dart';
 import 'package:health/dr_views/dr_home_tab.dart';
 import 'package:health/models/user_model.dart';
 import 'package:health/providers/user_provider.dart';
-import 'package:health/views/splash_screen_views.dart';
+import 'package:health/patient_views/splash_screen_views.dart';
 import 'package:provider/provider.dart';
 import '../../helpers/app_theme.dart';
 import '../../helpers/theme_provider.dart';
