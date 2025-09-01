@@ -68,15 +68,15 @@ class DrBottomNav extends StatelessWidget {
           items: [
             _buildNavItem(
               Icons.calendar_today,
-              'drappointment',
+              'Appointment',
               0,
               iconSize,
               iconPadding,
             ),
-            _buildNavItem(Icons.home, 'drhome', 1, iconSize, iconPadding),
+            _buildNavItem(Icons.home, 'home', 1, iconSize, iconPadding),
             _buildNavItem(
               Icons.chat_bubble_outline,
-              'drchat',
+              'Chat',
               2,
               iconSize,
               iconPadding,

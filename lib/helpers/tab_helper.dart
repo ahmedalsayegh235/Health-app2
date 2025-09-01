@@ -73,4 +73,24 @@ String formatTime(DateTime dateTime) {
         return rhythm.length > 10 ? '${rhythm.substring(0, 10)}...' : rhythm;
     }
   }
+
+
+// helper function
+IconData getIconData(String iconName) {
+  switch (iconName) {
+    case 'heart':
+      return Icons.favorite;
+    case 'spo2':
+      return Icons.air;
+    case 'ecg':
+      return Icons.favorite_border;
+    case 'home':
+      return Icons.home;
+    // add more as needed
+    default:
+      return Icons.help; // fallback
+  }
+}
+
+
   

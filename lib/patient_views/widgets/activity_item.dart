@@ -5,7 +5,6 @@ class ActivityItem extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
   final String title;
-  final String time;
   final bool isDarkMode;
   final VoidCallback? onTap;
 
@@ -14,7 +13,6 @@ class ActivityItem extends StatelessWidget {
     required this.icon,
     required this.iconColor,
     required this.title,
-    required this.time,
     required this.isDarkMode,
     this.onTap,
   });
@@ -72,13 +70,6 @@ class ActivityItem extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    time,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppTheme.textSecondaryColor(isDarkMode),
-                    ),
-                  ),
                 ],
               ),
             ),

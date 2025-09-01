@@ -3,8 +3,8 @@ import 'package:health/components/custom_header_button.dart';
 import 'package:health/components/status_indicator.dart';
 import 'package:health/helpers/app_theme.dart';
 import 'package:health/helpers/theme_provider.dart';
-import 'package:health/providers/sensor_provider.dart';
-import 'package:health/providers/user_provider.dart';
+import 'package:health/controllers/sensor_provider.dart';
+import 'package:health/controllers/user_provider.dart';
 import 'package:health/patient_views/tabs/widgets/activity/widgets/header/stat_widget.dart';
 import 'package:provider/provider.dart';
 

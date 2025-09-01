@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../helpers/app_theme.dart';
 import '../../../widgets/metric_card.dart';
-import '../../../../providers/sensor_provider.dart';
+import '../../../../controllers/sensor_provider.dart';
 import '../../../../models/Reading.dart';
 
 class HealthMetricsSection extends StatelessWidget {
@@ -138,8 +138,6 @@ class HealthMetricsSection extends StatelessWidget {
         ),
         const SizedBox(height: 12),
 
-        // Second Row (still static for now)
-        //TODO: fix the ecg values here
         Row(
           children: [
             Expanded(
@@ -152,7 +150,7 @@ class HealthMetricsSection extends StatelessWidget {
                   if (!snapshot.hasData || snapshot.data!.isEmpty) {
                     return _buildLoadingCard(
                       icon: Icons.monitor_heart,
-                      color: Colors.red,
+                      color: Colors.purple,
                       title: "ECG",
                       unit: "BPM",
                     );

@@ -5,16 +5,22 @@ import 'package:health/helpers/theme_provider.dart';
 import 'package:health/controllers/user_provider.dart';
 import 'package:provider/provider.dart';
 
-class AppointmentHeader extends StatelessWidget {
+class DrAppointmentHeader extends StatelessWidget {
   final bool isDark;
   final TabController tabController;
   final GlobalKey<ScaffoldState> scaffoldKey;
+  final Map<String, int>? stats;
+  final VoidCallback onCreateAppointment;
+  final VoidCallback onCleanup;
 
-  const AppointmentHeader({
+  const DrAppointmentHeader({
     super.key,
     required this.isDark,
     required this.tabController,
     required this.scaffoldKey,
+    this.stats,
+    required this.onCreateAppointment,
+    required this.onCleanup,
   });
 
   @override
@@ -43,7 +49,7 @@ class AppointmentHeader extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
           child: Column(
             children: [
-              // Top row: Drawer, Greeting, Theme button
+              // Top row: Drawer, Greeting, Actions
               Row(
                 children: [
                   HeaderButton(
@@ -64,8 +70,8 @@ class AppointmentHeader extends StatelessWidget {
                       children: [
                         Text(
                           user != null && user.name != null && user.name!.isNotEmpty
-                              ? 'Hello, ${user.name!.split(' ').first}!'
-                              : 'Hello, Guest!',
+                              ? 'Dr. ${user.name!.split(' ').first}'
+                              : 'Doctor Dashboard',
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -84,19 +90,61 @@ class AppointmentHeader extends StatelessWidget {
                     ),
                   ),
                   HeaderButton(
-                    icon: isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
-                    onTap: toggleTheme,
+                    icon: Icons.cleaning_services,
+                    onTap: onCleanup,
+                    backgroundColor: Colors.white.withOpacity(0.1),
+                    iconColor: Colors.white,
                   ),
                   HeaderButton(
-                    icon: Icons.calendar_today,
-                    onTap: () {},
+                    icon: Icons.add_circle_outline,
+                    onTap: onCreateAppointment,
+                    backgroundColor: Colors.white.withOpacity(0.1),
+                    iconColor: Colors.white,
+                  ),
+                  HeaderButton(
+                    icon: isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                    onTap: toggleTheme,
                   ),
                 ],
               ),
 
               const SizedBox(height: 24),
 
-              // Tab Bar
+              // Statistics cards
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatCard(
+                      icon: Icons.event_available,
+                      title: '${stats?['available'] ?? 0}',
+                      subtitle: 'Available',
+                      color: const Color(0xFF4ECDC4),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatCard(
+                      icon: Icons.pending_actions,
+                      title: '${stats?['pending'] ?? 0}',
+                      subtitle: 'Pending',
+                      color: const Color(0xFFFFB74D),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatCard(
+                      icon: Icons.check_circle,
+                      title: '${stats?['booked'] ?? 0}',
+                      subtitle: 'Booked',
+                      color: const Color(0xFF66BB6A),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+
+              // Modern Tab Bar
               Container(
                 height: 48,
                 decoration: BoxDecoration(
@@ -123,12 +171,12 @@ class AppointmentHeader extends StatelessWidget {
                   labelColor: Colors.white,
                   unselectedLabelColor: Colors.white.withOpacity(0.7),
                   labelStyle: const TextStyle(
-                    fontSize: 12,
+                    fontSize: 10,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.2,
                   ),
                   unselectedLabelStyle: const TextStyle(
-                    fontSize: 11,
+                    fontSize: 9,
                     fontWeight: FontWeight.w500,
                     letterSpacing: 0.1,
                   ),
@@ -140,8 +188,12 @@ class AppointmentHeader extends StatelessWidget {
                       icon: Icon(Icons.event_available, size: 16),
                     ),
                     Tab(
-                      text: 'My Appointments',
-                      icon: Icon(Icons.person_pin_circle, size: 16),
+                      text: 'Pending',
+                      icon: Icon(Icons.pending_actions, size: 16),
+                    ),
+                    Tab(
+                      text: 'Booked',
+                      icon: Icon(Icons.check_circle, size: 16),
                     ),
                   ],
                 ),
@@ -149,6 +201,57 @@ class AppointmentHeader extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildStatCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.16),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: color,
+              size: 16,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Text(
+            subtitle,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.7),
+              fontSize: 8,
+            ),
+          ),
+        ],
       ),
     );
   }

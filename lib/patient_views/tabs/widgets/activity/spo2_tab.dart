@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:health/components/custom_button.dart';
 import 'package:health/components/custom_graph.dart';
+import 'package:health/controllers/activities_provider.dart';
 import 'package:health/helpers/app_theme.dart';
 import 'package:health/helpers/tab_helper.dart';
 import 'package:health/models/Reading.dart';
-import 'package:health/providers/sensor_provider.dart';
+import 'package:health/controllers/sensor_provider.dart';
 import 'package:health/patient_views/tabs/widgets/activity/widgets/reading_diaglog.dart';
 import 'package:health/patient_views/tabs/widgets/activity/widgets/spo2/reading_card.dart';
 import 'package:provider/provider.dart';
@@ -69,7 +70,7 @@ class _SpO2TabState extends State<SpO2Tab> with SingleTickerProviderStateMixin {
     });
   }
 
-  void _stopRecording() {
+  Future<void> _stopRecording() async {
     if (!_isRecording) return;
 
     setState(() {
@@ -92,7 +93,19 @@ class _SpO2TabState extends State<SpO2Tab> with SingleTickerProviderStateMixin {
           ),
         ),
       );
-    }
+      
+      final newActivity = {
+      'title': 'SPO2 measured: ${lastReading.value.toInt()} %',
+      'icon': "spo2",            // will map to Icons.favorite
+      'iconColor': 0xFF2196F3,    // blue
+        };
+
+
+        // Save using ActivityProvider
+        final activityProvider = context.read<ActivityProvider>();
+        await activityProvider.addActivity(newActivity);
+
+        }
   }
 
   void _showReadingDetail(HealthReading reading) {

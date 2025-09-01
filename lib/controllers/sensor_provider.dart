@@ -353,7 +353,7 @@ class SensorProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void _finishEcgRecording() {
+  Future<void> _finishEcgRecording() async {
     if (!_isEcgRecording) return;
 
     _isEcgRecording = false;
@@ -385,7 +385,7 @@ class SensorProvider with ChangeNotifier {
 
     _lastEcgReading = reading;
     _saveToFirebase(reading);
-
+    
     _currentCollectionType = null;
     notifyListeners();
   }

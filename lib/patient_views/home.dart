@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:health/controllers/auth_controller.dart';
 import 'package:health/models/user_model.dart';
-import 'package:health/providers/user_provider.dart';
+import 'package:health/controllers/user_provider.dart';
 import 'package:health/patient_views/splash_screen_views.dart';
 import 'package:health/patient_views/tabs/activity_tab.dart';
 import 'package:health/patient_views/tabs/appointment_tab.dart';
@@ -87,7 +87,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         setState(() => _currentNavIndex = 1);
         break;
       case 'Appointments':
-        setState(() => _currentNavIndex = 2);
+        setState(() => _currentNavIndex = 0);
         break;
       case 'Logout':
         _logoutUser();
@@ -102,7 +102,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   Widget _getCurrentTab() {
     switch (_currentNavIndex) {
       case 0:
-        return AppointmentTab();
+        return AppointmentTab(scaffoldKey: _scaffoldKey,);
       case 1:
         return ActivityTab(scaffoldKey: _scaffoldKey);
       case 2:

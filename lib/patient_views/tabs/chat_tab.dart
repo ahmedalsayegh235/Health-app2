@@ -6,7 +6,7 @@ import 'package:health/helpers/app_theme.dart';
 import 'package:health/helpers/theme_provider.dart';
 import 'package:health/models/chat_model.dart';
 import 'package:health/models/user_model.dart';
-import 'package:health/patient_views/tabs/widgets/chatscreen.dart';
+import 'package:health/patient_views/tabs/widgets/chat/chatscreen.dart';
 import 'package:provider/provider.dart';
 
 class ChatTab extends StatelessWidget {

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:health/providers/user_provider.dart';
+import 'package:health/controllers/user_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:health/helpers/app_theme.dart';
 
@@ -87,11 +87,11 @@ class DrCustomDrawer extends StatelessWidget {
                 // _buildDrawerItem(context, Icons.medication, 'Medications'),
                 // _buildDrawerItem(context, Icons.local_hospital, 'Emergency'),
                 // _buildDrawerItem(context, Icons.settings, 'Settings'),
-                // Divider(
-                //   color: isDarkMode
-                //       ? const Color(0xFF1E1E1E)
-                //       : Colors.grey[300],
-                // ),
+                Divider(
+                  color: isDarkMode
+                      ? const Color(0xFF1E1E1E)
+                      : Colors.grey[300],
+                ),
                 // _buildDrawerItem(context, Icons.help_outline, 'Help & Support'),
                 // _buildDrawerItem(context, Icons.info_outline, 'About'),
                 _buildDrawerItem(context, Icons.logout, 'Logout'),

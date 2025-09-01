@@ -7,7 +7,7 @@ import 'package:health/dr_views/dr_components/DrBottomNav.dart';
 import 'package:health/dr_views/dr_components/dr_custom_drawer.dart';
 import 'package:health/dr_views/dr_home_tab.dart';
 import 'package:health/models/user_model.dart';
-import 'package:health/providers/user_provider.dart';
+import 'package:health/controllers/user_provider.dart';
 import 'package:health/patient_views/splash_screen_views.dart';
 import 'package:provider/provider.dart';
 import '../../helpers/app_theme.dart';
@@ -116,17 +116,6 @@ class _DrHomePageState extends State<DrHomePage> with TickerProviderStateMixin {
           : Scaffold(
               key: _scaffoldKey,
               backgroundColor: AppTheme.backgroundColor(isDarkMode),
-              appBar: AppBar(
-                title: Text('Hi Dr. ${user!.name}'),
-                actions: [
-                  IconButton(
-                    icon: Icon(Icons.notifications),
-                    onPressed: () {
-                      // Handle notifications
-                    },
-                  ),
-                ],
-              ),
               // Shared drawer for all tabs
               drawer: DrCustomDrawer(
                 isDarkMode: isDarkMode,

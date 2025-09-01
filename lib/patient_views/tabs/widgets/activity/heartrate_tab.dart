@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:health/components/custom_button.dart';
 import 'package:health/components/custom_graph.dart';
+import 'package:health/controllers/activities_provider.dart';
 import 'package:health/helpers/app_theme.dart';
 import 'package:health/helpers/tab_helper.dart';
 import 'package:health/models/Reading.dart';
-import 'package:health/providers/sensor_provider.dart';
+import 'package:health/controllers/sensor_provider.dart';
 import 'package:health/patient_views/tabs/widgets/activity/widgets/heart/reading_card.dart';
 import 'package:health/patient_views/tabs/widgets/activity/widgets/reading_diaglog.dart';
 import 'package:provider/provider.dart';
@@ -64,33 +65,43 @@ class _HeartRateTabState extends State<HeartRateTab>
     });
   }
 
-  void _stopRecording() {
-    if (!_isRecording) return;
+Future<void> _stopRecording() async {
+  if (!_isRecording) return;
 
-    setState(() {
-      _isRecording = false;
-    });
-    _pulseController.stop();
-    _pulseController.reset();
+  setState(() {
+    _isRecording = false;
+  });
+  _pulseController.stop();
+  _pulseController.reset();
 
-    final sensorProvider = context.read<SensorProvider>();
-    final lastReading = sensorProvider.lastHeartRate;
+  final sensorProvider = context.read<SensorProvider>();
+  final lastReading = sensorProvider.lastHeartRate;
 
-    if (lastReading != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Heart Rate recorded: ${lastReading.value.toInt()} bpm',
-          ),
-          backgroundColor: AppTheme.lightgreen,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+  if (lastReading != null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Heart Rate recorded: ${lastReading.value.toInt()} bpm',
         ),
-      );
-    }
+        backgroundColor: AppTheme.lightgreen,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
+
+    final newActivity = {
+  'title': 'Heart rate measured: ${lastReading.value.toInt()} bpm',
+  'icon': "heart",            // will map to Icons.favorite
+  'iconColor': 0xFFF44336,    // red
+    };
+    // Save using ActivityProvider
+    final activityProvider = context.read<ActivityProvider>();
+    await activityProvider.addActivity(newActivity);
   }
+}
+
 
   void _showReadingDetail(HealthReading reading) {
     showDialog(

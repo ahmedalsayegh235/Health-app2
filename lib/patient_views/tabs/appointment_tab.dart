@@ -6,7 +6,7 @@ import 'package:health/helpers/app_theme.dart';
 import 'package:health/helpers/theme_provider.dart';
 import 'package:health/patient_views/tabs/widgets/appointment/appointment_card.dart';
 import 'package:health/patient_views/tabs/widgets/appointment/appointment_header.dart';
-import 'package:health/providers/user_provider.dart';
+import 'package:health/controllers/user_provider.dart';
 import 'package:provider/provider.dart';
 
 class AppointmentTab extends StatefulWidget {
@@ -61,9 +61,7 @@ class _AppointmentTabState extends State<AppointmentTab>
 
     return ChangeNotifierProvider.value(
       value: _appointmentController,
-      child: Scaffold(
-        backgroundColor: AppTheme.backgroundColor(isDarkMode),
-        body: Column(
+      child: Column(
           children: [
             // Animated header
             SlideTransition(
@@ -96,8 +94,7 @@ class _AppointmentTabState extends State<AppointmentTab>
             ),
           ],
         ),
-      ),
-    );
+      );
   }
 
   Widget _buildAppointmentList(String type, bool isDarkMode) {
