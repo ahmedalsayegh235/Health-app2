@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:health/helpers/app_theme.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../providers/user_provider.dart';
+import '../controllers/user_provider.dart';
 import '../../helpers/theme_provider.dart';
 
 class DrAppointmentTab extends StatefulWidget {

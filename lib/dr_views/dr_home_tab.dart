@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:health/controllers/animation/home_animation_controller.dart';
 import 'package:health/helpers/theme_provider.dart';
-import 'package:health/providers/user_provider.dart';
-import 'package:health/views/splash_screen_views.dart';
-import 'package:health/views/tabs/widgets/home/header_section_home.dart';
+import 'package:health/controllers/user_provider.dart';
+import 'package:health/patient_views/splash_screen_views.dart';
+import 'package:health/patient_views/tabs/widgets/home/header_section_home.dart';
 import 'package:provider/provider.dart';
 
 class DrHomeTab extends StatefulWidget {

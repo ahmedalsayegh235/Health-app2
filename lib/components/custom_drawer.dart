@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:health/providers/user_provider.dart';
+import 'package:health/controllers/user_provider.dart';
 import 'package:provider/provider.dart';
 import '../helpers/app_theme.dart';
 

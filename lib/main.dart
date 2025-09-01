@@ -2,16 +2,17 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:health/controllers/activities_provider.dart';
 import 'package:health/dr_views/dr_appointment_tab.dart';
 import 'package:health/dr_views/dr_chat_tab.dart';
 import 'package:health/dr_views/dr_home.dart';
 import 'package:health/firebase_options.dart';
-import 'package:health/providers/sensor_provider.dart';
-import 'package:health/providers/user_provider.dart';
-import 'views/splash_screen_views.dart';
-import 'package:health/views/home.dart';
-import 'package:health/views/auth_view/login.dart';
-import 'package:health/views/auth_view/signup.dart';
+import 'package:health/controllers/sensor_provider.dart';
+import 'package:health/controllers/user_provider.dart';
+import 'patient_views/splash_screen_views.dart';
+import 'package:health/patient_views/home.dart';
+import 'package:health/auth_view/login.dart';
+import 'package:health/auth_view/signup.dart';
 import 'package:provider/provider.dart';
 import 'helpers/theme_provider.dart';
 
@@ -23,9 +24,8 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(
-          create: (_) => UserProvider(),
-        ), //for the stupid user
+        ChangeNotifierProvider(create: (_) => UserProvider(),),
+        ChangeNotifierProvider(create: (_) => ActivityProvider()..loadActivities()), //for the stupid user
         ChangeNotifierProvider(create: (_) => SensorProvider()),
       ],
       child: const MainApp(),
