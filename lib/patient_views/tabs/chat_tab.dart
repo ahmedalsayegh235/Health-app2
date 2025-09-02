@@ -2,419 +2,461 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:health/components/custom_button.dart';
+import 'package:health/controllers/chat_controller.dart';
 import 'package:health/helpers/app_theme.dart';
 import 'package:health/helpers/theme_provider.dart';
-import 'package:health/models/chat_model.dart';
 import 'package:health/models/user_model.dart';
 import 'package:health/patient_views/tabs/widgets/chat/chatscreen.dart';
+import 'package:health/patient_views/tabs/widgets/chat/chat_header.dart';
 import 'package:provider/provider.dart';
 
-class ChatTab extends StatelessWidget {
-  const ChatTab({super.key});
+class ChatTab extends StatefulWidget {
+  final GlobalKey<ScaffoldState>? scaffoldKey;
+
+  const ChatTab({super.key, this.scaffoldKey});
+
+  @override
+  State<ChatTab> createState() => _ChatTabState();
+}
+
+class _ChatTabState extends State<ChatTab>
+    with TickerProviderStateMixin {
+  late AnimationController _slideController;
+  late AnimationController _fadeController;
+  late Animation<Offset> _slideAnimation;
+  late Animation<double> _fadeAnimation;
+  late ChatLogic _chatLogic;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeAnimations();
+    _chatLogic = ChatLogic();
+    _startAnimations();
+  }
+
+  void _initializeAnimations() {
+    _slideController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, -1),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _slideController,
+      curve: Curves.easeOutCubic,
+    ));
+
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeOutQuart,
+    ));
+  }
+
+  void _startAnimations() {
+    Future.delayed(const Duration(milliseconds: 100), () {
+      _slideController.forward();
+    });
+    
+    Future.delayed(const Duration(milliseconds: 300), () {
+      _fadeController.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _slideController.dispose();
+    _fadeController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final currentUserId = FirebaseAuth.instance.currentUser!.uid;
-    final isDarkMode = Provider.of<ThemeProvider>(context).isDarkMode;
-    return DefaultTabController(
-      length: UserModel.userData.role == 'doctor' ? 2 : 2, // tabs for both
-      child: Scaffold(
-        appBar: AppBar(
-          centerTitle: true,
-          title: Text("Chats"),
-        ),
-        body: 
-                  // ---------- Doctor Requests ----------
-                //   StreamBuilder(
-                //     stream: FirebaseFirestore.instance
-                //         .collection("chats")
-                //         .where("members", arrayContains: currentUserId)
-                //         .where("isAccept", isEqualTo: false)
-                //         .snapshots(),
-                //     builder: (context, snapshot) {
-                //       if (!snapshot.hasData) return CircularProgressIndicator();
-                //       var docs = snapshot.data!.docs;
-                //       if (docs.isEmpty)
-                //         return Center(child: Text("No requests yet"));
-                //       return ListView.builder(
-                //         itemCount: docs.length,
-                //         itemBuilder: (context, index) {
-                //           var chat = ChatModel.fromFirestore(docs[index]);
-                //           final patientId = chat.members!.firstWhere(
-                //             (id) => id != currentUserId,
-                //           );
-                //           return FutureBuilder<UserModel?>(
-                //             future: UserModel.getUserData(patientId),
-                //             builder: (context, snap) {
-                //               if (!snap.hasData) return SizedBox();
-                //               var patient = snap.data!;
-                //               return ListTile(
-                //                 title: Text(patient.name ?? "Unknown"),
-                //                 subtitle: Text(patient.email ?? ""),
-                //                 trailing: ElevatedButton(
-                //                   onPressed: () async {
-                //                     await FirebaseFirestore.instance
-                //                         .collection("chats")
-                //                         .doc(chat.id)
-                //                         .update({"isAccept": true});
-                //                   },
-                //                   child: Text("Accept"),
-                //                 ),
-                //               );
-                //             },
-                //           );
-                //         },
-                //       );
-                //     },
-                //   ),
 
-                //   // ---------- Doctor Active Chats ----------
-                //   StreamBuilder(
-                //     stream: FirebaseFirestore.instance
-                //         .collection("chats")
-                //         .where("members", arrayContains: currentUserId)
-                //         .where("isAccept", isEqualTo: true)
-                //         .snapshots(),
-                //     builder: (context, snapshot) {
-                //       if (!snapshot.hasData) return CircularProgressIndicator();
-                //       var docs = snapshot.data!.docs;
-                //       if (docs.isEmpty)
-                //         return Center(child: Text("No active chats"));
-                //       return ListView(
-                //         children: docs.map((doc) {
-                //           var chat = ChatModel.fromFirestore(doc);
-                //           final otherId = chat.members!.firstWhere(
-                //             (id) => id != currentUserId,
-                //           );
-                //           return FutureBuilder<UserModel?>(
-                //             future: UserModel.getUserData(otherId),
-                //             builder: (context, snap) {
-                //               if (!snap.hasData) return SizedBox();
-                //               var user = snap.data!;
-                //               return ListTile(
-                //                 title: Text(user.name ?? "Unknown"),
-                //                 subtitle: Text(user.role ?? ""),
-                //                 onTap: () {
-                //                   Navigator.push(
-                //                     context,
-                //                     MaterialPageRoute(
-                //                       builder: (_) => ChatScreen(
-                //                         chatId: chat.id!,
-                //                         otherUser: user,
-                //                       ),
-                //                     ),
-                //                   );
-                //                 },
-                //               );
-                //             },
-                //           );
-                //         }).toList(),
-                //       );
-                //     },
-                //   ),
-                // ]
-               
-                  // ---------- Patient Doctors ----------
-               StreamBuilder(
-  stream: FirebaseFirestore.instance
-      .collection("users")
-      .where("role", isEqualTo: "doctor")
-      .snapshots(),
-  builder: (context, snapshot) {
-    if (!snapshot.hasData) {
-      return const Center(child: CircularProgressIndicator());
+    return Column(
+      children: [
+        // Animated Header
+        SlideTransition(
+          position: _slideAnimation,
+          child: ChatHeader(
+            isDark: isDark,
+            scaffoldKey: widget.scaffoldKey,
+          ),
+        ),
+        
+        // Animated Content
+        Expanded(
+          child: FadeTransition(
+            opacity: _fadeAnimation,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    AppTheme.backgroundColor(isDark),
+                    AppTheme.backgroundColor(isDark).withOpacity(0.95),
+                  ],
+                ),
+              ),
+              child: StreamBuilder<QuerySnapshot>(
+                stream: _chatLogic.getDoctorsStream(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return _buildLoadingState(isDark);
+                  }
+
+                  var doctors = snapshot.data!.docs;
+
+                  if (doctors.isEmpty) {
+                    return _buildEmptyState(isDark);
+                  }
+
+                  return _buildDoctorsList(doctors, currentUserId, isDark);
+                },
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLoadingState(bool isDark) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.lightgreen),
+            strokeWidth: 3,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Loading doctors...',
+            style: TextStyle(
+              color: AppTheme.textSecondaryColor(isDark),
+              fontSize: 16,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(bool isDark) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.local_hospital_outlined,
+            size: 64,
+            color: AppTheme.textSecondaryColor(isDark),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No doctors available',
+            style: TextStyle(
+              color: AppTheme.textColor(isDark),
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Please check back later',
+            style: TextStyle(
+              color: AppTheme.textSecondaryColor(isDark),
+              fontSize: 16,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDoctorsList(List<QueryDocumentSnapshot> doctors, String currentUserId, bool isDark) {
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      itemCount: doctors.length,
+      itemBuilder: (context, index) {
+        return TweenAnimationBuilder<double>(
+          duration: Duration(milliseconds: 400 + (index * 100)),
+          curve: Curves.easeOutBack,
+          tween: Tween(begin: 0.0, end: 1.0),
+          builder: (context, value, child) {
+            return Transform.scale(
+              scale: value,
+              child: Opacity(
+                opacity: value.clamp(0.0, 1.0),
+                child: _buildDoctorCard(doctors[index], currentUserId, isDark),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildDoctorCard(QueryDocumentSnapshot doctor, String currentUserId, bool isDark) {
+    final doctorId = doctor.id;
+    final isDarkMode = Provider.of<ThemeProvider>(context).isDarkMode;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      decoration: AppTheme.cardDecoration(isDark, borderRadius: 20),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              // Optional: Add doctor profile tap functionality
+            },
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              child: StreamBuilder<QuerySnapshot>(
+                stream: _chatLogic.getChatStream(UserModel.userData.id!),
+                builder: (context, chatSnapshot) {
+                  if (!chatSnapshot.hasData) {
+                    return _buildDoctorCardLoading(doctor, isDark);
+                  }
+
+                  var chats = _chatLogic.filterChatsForDoctor(
+                    chatSnapshot.data!.docs,
+                    doctorId,
+                  );
+
+                  Widget actionButton = _buildActionButton(
+                    chats,
+                    doctorId,
+                    doctor,
+                    isDarkMode,
+                    isDark,
+                  );
+
+                  return _buildDoctorCardContent(doctor, actionButton, isDark);
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDoctorCardLoading(QueryDocumentSnapshot doctor, bool isDark) {
+    return Row(
+      children: [
+        _buildDoctorAvatar(isDark),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                doctor["name"] ?? "Doctor",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textColor(isDark),
+                ),
+              ),
+              const SizedBox(height: 4),
+            ],
+          ),
+        ),
+        SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.lightgreen),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDoctorCardContent(QueryDocumentSnapshot doctor, Widget actionButton, bool isDark) {
+    return Row(
+      children: [
+        _buildDoctorAvatar(isDark),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                doctor["name"] ?? "Doctor",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textColor(isDark),
+                ),
+              ),
+              const SizedBox(height: 4),
+            ],
+          ),
+        ),
+        actionButton,
+      ],
+    );
+  }
+
+  Widget _buildDoctorAvatar(bool isDark) {
+    return Container(
+      width: 60,
+      height: 60,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: AppTheme.headerGradient(isDark),
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.lightgreen.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: const Icon(
+        Icons.local_hospital,
+        color: Colors.white,
+        size: 25,
+      ),
+    );
+  }
+
+  Widget _buildActionButton(
+    List<QueryDocumentSnapshot> chats,
+    String doctorId,
+    QueryDocumentSnapshot doctor,
+    bool isDarkMode,
+    bool isDark,
+  ) {
+    if (chats.isEmpty) {
+      return _buildRequestButton(doctorId, doctor, isDarkMode);
     }
 
-    var docs = snapshot.data!.docs;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    var chat = chats.first;
+    bool accepted = chat["isAccept"] ?? false;
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: docs.length,
-      itemBuilder: (context, index) {
-        var doctor = docs[index];
-        final doctorId = doctor.id;
+    if (accepted) {
+      return _buildOpenChatButton(chat, doctor, isDarkMode, isDark);
+    } else {
+      return _buildPendingButton(isDarkMode);
+    }
+  }
 
-        return Card(
-          margin: const EdgeInsets.only(bottom: 16),
-          color: AppTheme.cardColor(isDark),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          elevation: 6,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection("chats")
-                  .where(
-                    "members",
-                    arrayContains: UserModel.userData.id,
-                  )
-                  .snapshots(),
-              builder: (context, chatSnapshot) {
-                if (!chatSnapshot.hasData) {
-                  return Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          doctor["name"],
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.textColor(isDark),
-                          ),
-                        ),
-                      ),
-                      const CircularProgressIndicator(strokeWidth: 2),
-                    ],
-                  );
-                }
+  Widget _buildRequestButton(String doctorId, QueryDocumentSnapshot doctor, bool isDarkMode) {
+    return CustomButton(
+      text: "Request",
+      textStyle: TextStyle(
+        color: Colors.white,
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+      ),
+      onPressed: () => _chatLogic.sendChatRequest(
+        context,
+        doctorId,
+        doctor["name"],
+      ),
+      gradientColors: [
+        Colors.blue.shade500,
+        Colors.blue.shade400,
+      ],
+      height: 38,
+      width: 100,
+      borderRadius: BorderRadius.circular(16),
+    );
+  }
 
-                // Filter chats for this specific doctor
-                var chats = chatSnapshot.data!.docs.where((doc) {
-                  List members = doc["members"];
-                  return members.contains(doctorId);
-                }).toList();
-
-                Widget actionBtn;
-
-                if (chats.isEmpty) {
-                  // No chat exists - show Request button
-                  actionBtn = CustomButton(
-                    text: "Request",
-                    textStyle: TextStyle(
-                      color: isDarkMode ? Colors.white : Colors.black,
-                      fontSize: 12,
-                    ),
-                    onPressed: () async {
-                      final patientId = UserModel.userData.id;
-
-                      // Create new chat request
-                      await FirebaseFirestore.instance
-                          .collection("chats")
-                          .add({
-                        "members": [patientId, doctorId],
-                        "isAccept": false,
-                        "createdAt": FieldValue.serverTimestamp(),
-                      });
-
-                      // Optional: Show success message
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text("Request sent to Dr. ${doctor["name"]}"),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                    },
-                    gradientColors: [
-                      Colors.red.shade400,
-                      Colors.red.shade300,
-                    ],
-                    height: 44,
-                    width: 120,
-                  );
-                } else {
-                  // Chat exists - check if accepted or pending
-                  var chat = chats.first;
-                  bool accepted = chat["isAccept"] ?? false;
-
-                  if (accepted) {
-                    // Chat accepted - show Open Chat button
-                    actionBtn = CustomButton(
-                      text: "Open Chat",
-                      textStyle: TextStyle(
-                        color: isDarkMode ? Colors.white : Colors.black,
-                        fontSize: 12,
-                      ),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ChatScreen(
-                              chatId: chat.id,
-                              otherUser: UserModel.fromFirestore(doctor),
-                            ),
-                          ),
-                        );
-                      },
-                      gradientColors: AppTheme.headerGradient(isDark),
-                      height: 44,
-                      width: 120,
-                    );
-                  } else {
-                    // Chat pending - show Pending button (disabled)
-                    actionBtn = CustomButton(
-                      textStyle: TextStyle(
-                        color: isDarkMode ? Colors.grey : Colors.black54,
-                        fontSize: 12,
-                      ),
-                      text: "Pending",
-                      onPressed: null, // Disabled button
-                      gradientColors: [
-                        Colors.yellow.shade600,
-                        Colors.yellow,
-                      ],
-                      height: 44,
-                      width: 120,
-                    );
-                  }
-                }
-
-                return Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        doctor["name"],
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.textColor(isDark),
-                        ),
-                      ),
-                    ),
-                    actionBtn,
-                  ],
-                );
-              },
+  Widget _buildOpenChatButton(
+    QueryDocumentSnapshot chat,
+    QueryDocumentSnapshot doctor,
+    bool isDarkMode,
+    bool isDark,
+  ) {
+    return CustomButton(
+      text: "Chat",
+      textStyle: TextStyle(
+        color: Colors.white,
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+      ),
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ChatScreen(
+              chatId: chat.id,
+              otherUser: UserModel.fromFirestore(doctor),
             ),
           ),
         );
       },
+      gradientColors: AppTheme.headerGradient(isDark),
+      height: 38,
+      width: 100,
+      borderRadius: BorderRadius.circular(16),
     );
-  },
-),
+  }
 
-                  // // ---------- Patient Active Chats ----------
-                  // StreamBuilder(
-                  //   stream: FirebaseFirestore.instance
-                  //       .collection("chats")
-                  //       .where("members", arrayContains: currentUserId)
-                  //       .where("isAccept", isEqualTo: true)
-                  //       .snapshots(),
-                  //   builder: (context, snapshot) {
-                  //     if (!snapshot.hasData)
-                  //       return const Center(child: CircularProgressIndicator());
-                  //     var docs = snapshot.data!.docs;
-                  //     final isDark =
-                  //         Theme.of(context).brightness == Brightness.dark;
-
-                  //     if (docs.isEmpty) {
-                  //       return Center(
-                  //         child: Text(
-                  //           "No active chats",
-                  //           style: TextStyle(
-                  //             color: AppTheme.textSecondaryColor(isDark),
-                  //             fontSize: 16,
-                  //           ),
-                  //         ),
-                  //       );
-                  //     }
-
-                  //     return ListView.builder(
-                  //       padding: const EdgeInsets.all(16),
-                  //       itemCount: docs.length,
-                  //       itemBuilder: (context, index) {
-                  //         var chat = ChatModel.fromFirestore(docs[index]);
-                  //         final otherId = chat.members!.firstWhere(
-                  //           (id) => id != currentUserId,
-                  //         );
-
-                  //         return FutureBuilder<UserModel?>(
-                  //           future: UserModel.getUserData(otherId),
-                  //           builder: (context, snap) {
-                  //             if (!snap.hasData) return const SizedBox();
-
-                  //             var user = snap.data!;
-                  //             return Card(
-                  //               margin: const EdgeInsets.only(bottom: 16),
-                  //               color: AppTheme.cardColor(isDark),
-                  //               shape: RoundedRectangleBorder(
-                  //                 borderRadius: BorderRadius.circular(20),
-                  //               ),
-                  //               elevation: 6,
-                  //               child: Padding(
-                  //                 padding: const EdgeInsets.all(16),
-                  //                 child: Row(
-                  //                   children: [
-                  //                     CircleAvatar(
-                  //                       radius: 28,
-                  //                       backgroundColor: AppTheme.lightgreen
-                  //                           .withAlpha(40),
-                  //                       child: Icon(
-                  //                         Icons.person,
-                  //                         color: AppTheme.lightgreen,
-                  //                         size: 32,
-                  //                       ),
-                  //                     ),
-                  //                     const SizedBox(width: 16),
-                  //                     Expanded(
-                  //                       child: Column(
-                  //                         crossAxisAlignment:
-                  //                             CrossAxisAlignment.start,
-                  //                         children: [
-                  //                           Text(
-                  //                             user.name ?? "Unknown",
-                  //                             style: TextStyle(
-                  //                               fontSize: 18,
-                  //                               fontWeight: FontWeight.bold,
-                  //                               color: AppTheme.textColor(
-                  //                                 isDark,
-                  //                               ),
-                  //                             ),
-                  //                           ),
-                  //                           Text(
-                  //                             user.role ?? "",
-                  //                             style: TextStyle(
-                  //                               fontSize: 14,
-                  //                               color:
-                  //                                   AppTheme.textSecondaryColor(
-                  //                                     isDark,
-                  //                                   ),
-                  //                             ),
-                  //                           ),
-                  //                         ],
-                  //                       ),
-                  //                     ),
-                  //                     CustomButton(
-                  //                       text: "Open Chat",
-                  //                       textStyle: TextStyle(
-                  //                         color: isDarkMode
-                  //                             ? Colors.white
-                  //                             : Colors.black,
-                  //                         fontSize: 12,
-                  //                       ),
-                  //                       onPressed: () {
-                  //                         Navigator.push(
-                  //                           context,
-                  //                           MaterialPageRoute(
-                  //                             builder: (_) => ChatScreen(
-                  //                               chatId: chat.id!,
-                  //                               otherUser: user,
-                  //                             ),
-                  //                           ),
-                  //                         );
-                  //                       },
-                  //                       height: 44,
-                  //                       width: 120,
-                                      
-                  //                       gradientColors: AppTheme.headerGradient(
-                  //                         isDark,
-                  //                       ),
-                  //                     ),
-                  //                   ],
-                  //                 ),
-                  //               ),
-                  //             );
-                  //           },
-                  //         );
-                  //       },
-                  //     );
-                  //   },
-                  // ),
-              
+  Widget _buildPendingButton(bool isDarkMode) {
+    return Container(
+      height: 38,
+      width: 100,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.orange.shade300,
+            Colors.orange.shade200,
+          ],
         ),
-  
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Center(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              "Pending",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

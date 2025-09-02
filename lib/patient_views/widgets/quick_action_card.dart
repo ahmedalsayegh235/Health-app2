@@ -55,7 +55,7 @@ class _QuickActionCardState extends State<QuickActionCard>
     final screenWidth = MediaQuery.of(context).size.width;
 
     // Scale values based on screen width
-    final padding = screenWidth * 0.06; // outer padding
+    final padding = screenWidth * 0.05; // outer padding
     final iconContainerPadding = screenWidth * 0.03; // icon container
     final iconSize = screenWidth * 0.08; // icon size
     final fontSize = screenWidth * 0.029; // text size
