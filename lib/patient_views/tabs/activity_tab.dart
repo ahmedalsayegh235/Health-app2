@@ -14,18 +14,51 @@ class ActivityTab extends StatefulWidget {
 }
 
 class _ActivityTabState extends State<ActivityTab>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin { 
   late TabController _tabController;
+  late AnimationController _headerAnimationController;
+  late Animation<Offset> _slideAnimation;
+  late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+
+    _headerAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, -1),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _headerAnimationController,
+        curve: Curves.easeOut,
+      ),
+    );
+
+    _fadeAnimation = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(
+      CurvedAnimation(
+        parent: _headerAnimationController,
+        curve: Curves.easeIn,
+      ),
+    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _headerAnimationController.forward();
+    });
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _headerAnimationController.dispose();
     super.dispose();
   }
 
@@ -35,14 +68,17 @@ class _ActivityTabState extends State<ActivityTab>
 
     return Column(
       children: [
-        // Modern Header with Integrated Tabs
-        ActivityHeader(
-          isDark: isDark,
-          tabController: _tabController,
-          scaffoldKey: widget.scaffoldKey, // pass it here
+        SlideTransition(
+          position: _slideAnimation,
+          child: FadeTransition(
+            opacity: _fadeAnimation,
+            child: ActivityHeader(
+              isDark: isDark,
+              tabController: _tabController,
+              scaffoldKey: widget.scaffoldKey,
+            ),
+          ),
         ),
-
-        // Tab Views
         Expanded(
           child: Container(
             margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),

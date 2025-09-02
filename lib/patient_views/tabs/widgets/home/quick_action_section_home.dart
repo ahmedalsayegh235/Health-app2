@@ -57,7 +57,7 @@ class QuickActionSection extends StatelessWidget {
                   child: QuickActionCard(
                     icon: Icons.water_drop_outlined,
                     iconColor: Colors.blue,
-                    title: "Hydration",
+                    title: "SPo2",
                     isDarkMode: isDarkMode,
                     onTap: () {
                       // Navigate to hydration details
@@ -76,7 +76,7 @@ class QuickActionSection extends StatelessWidget {
                     },
                   ),
                 ),
-                // Add more cards if needed, they'll wrap to next row
+                
               ],
             );
           },

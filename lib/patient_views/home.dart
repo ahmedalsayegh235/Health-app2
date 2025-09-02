@@ -108,7 +108,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       case 2:
         return  HomeTab(vsync: this, animations: _animations);
       case 3:
-        return ChatTab();
+        return ChatTab(scaffoldKey: _scaffoldKey,);
       case 4:
         return ProfileTab();
       default:
