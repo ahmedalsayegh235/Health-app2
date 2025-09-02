@@ -124,7 +124,7 @@ class AuthController {
       }
 
       return emailChanged
-          ? "Verification email sent to ${email!.trim()}. Please verify your new email address."
+          ? "Verification email sent to ${email.trim()}. Please verify your new email address."
           : "Profile updated successfully.";
     } on FirebaseAuthException catch (e) {
       if (e.code == 'wrong-password') return "The password you entered is incorrect.";

@@ -1,6 +1,5 @@
 // lib/views/home_view/hometab.dart
 import 'package:flutter/material.dart';
-import 'package:health/controllers/activities_provider.dart';
 import 'package:health/controllers/user_provider.dart';
 import 'package:health/models/user_activity_model.dart';
 import 'package:health/patient_views/splash_screen_views.dart';
@@ -40,7 +39,6 @@ class _HomeTabState extends State<HomeTab> {
   Widget build(BuildContext context) {
     final user = Provider.of<UserProvider>(context).user;
     final isDarkMode = Provider.of<ThemeProvider>(context).isDarkMode;
-    final activityProvider = Provider.of<ActivityProvider>(context);
 
     if (user == null) {
       return const SplashScreenViews();

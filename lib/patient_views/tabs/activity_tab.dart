@@ -27,7 +27,7 @@ class _ActivityTabState extends State<ActivityTab>
 
     _headerAnimationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 900),
     );
 
     _slideAnimation = Tween<Offset>(
