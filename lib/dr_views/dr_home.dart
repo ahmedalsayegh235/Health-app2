@@ -95,7 +95,7 @@ class _DrHomePageState extends State<DrHomePage> with TickerProviderStateMixin {
   Widget _getCurrentTab() {
     switch (_currentNavIndex) {
       case 0:
-        return DrAppointmentTab();
+        return DrAppointmentTab(scaffoldKey: _scaffoldKey,);
       case 1:
         return DrHomeTab(vsync: this, animations: _animations);
       case 2:

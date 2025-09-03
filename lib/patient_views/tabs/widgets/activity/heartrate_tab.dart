@@ -323,7 +323,8 @@ Future<void> _stopRecording() async {
                       _showAllReadings ? 'View Less' : "View All",
                       style: TextStyle(
                         color: AppTheme.lightgreen,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 13,
                       ),
                     ),
                   ),

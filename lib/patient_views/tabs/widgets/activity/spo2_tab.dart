@@ -384,6 +384,7 @@ class _SpO2TabState extends State<SpO2Tab> with SingleTickerProviderStateMixin {
                       style: TextStyle(
                         color: AppTheme.lightgreen,
                         fontWeight: FontWeight.w600,
+                        fontSize: 13,
                       ),
                     ),
                   ),

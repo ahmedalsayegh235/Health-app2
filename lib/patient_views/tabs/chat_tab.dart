@@ -371,7 +371,7 @@ class _ChatTabState extends State<ChatTab>
       text: "Request",
       textStyle: TextStyle(
         color: Colors.white,
-        fontSize: 12,
+        fontSize: 11,
         fontWeight: FontWeight.w600,
       ),
       onPressed: () => _chatLogic.sendChatRequest(

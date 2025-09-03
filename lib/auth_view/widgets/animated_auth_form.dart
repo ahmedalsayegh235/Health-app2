@@ -96,6 +96,7 @@ class AnimatedAuthForm extends StatelessWidget {
                     if (subtitle != null)
                       Text(
                         subtitle!,
+                        textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 16,
                           color: Colors.white.withValues(alpha: 0.8),

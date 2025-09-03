@@ -53,8 +53,6 @@ class MainApp extends StatelessWidget {
             'home': (context) => const HomePage(),
             'splash': (context) => const SplashScreenViews(),
             'drhome': (context) => const DrHomePage(),
-            'drappointment': (context) => const DrAppointmentTab(),
-            'drchat': (context) => const DrChatTab(),
           },
         );
       },
