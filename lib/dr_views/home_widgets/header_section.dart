@@ -2,20 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:health/components/custom_header_button.dart';
 import 'package:health/components/status_indicator.dart';
 import 'package:health/helpers/theme_provider.dart';
-import 'package:health/patient_views/widgets/scorebar_widget.dart';
 import 'package:provider/provider.dart';
-import '../../../../helpers/app_theme.dart';
-import '../../../../controllers/animation/home_animation_controller.dart';
-import '../../../../controllers/user_provider.dart';
+import '../../helpers/app_theme.dart';
+import '../../controllers/animation/home_animation_controller.dart';
+import '../../controllers/user_provider.dart';
 
-class HeaderSection extends StatelessWidget {
+class DrHeaderSection extends StatelessWidget {
   final HomeAnimations animations;
-  final bool isdarkMode;
+  final bool isDarkMode;
+  final GlobalKey<ScaffoldState>? scaffoldKey;
 
-  const HeaderSection({
+  const DrHeaderSection({
     super.key,
     required this.animations,
-    required this.isdarkMode,
+    required this.isDarkMode,
+    this.scaffoldKey,
   });
 
   @override
@@ -36,7 +37,7 @@ class HeaderSection extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: AppTheme.headerGradient(isdarkMode),
+              colors: AppTheme.headerGradient(isDarkMode),
             ),
             borderRadius: const BorderRadius.only(
               bottomLeft: Radius.circular(30),
@@ -62,7 +63,13 @@ class HeaderSection extends StatelessWidget {
                         Builder(
                           builder: (context) => HeaderButton(
                             icon: Icons.menu,
-                            onTap: () => Scaffold.of(context).openDrawer(),
+                            onTap: () {
+                              if (scaffoldKey != null) {
+                                scaffoldKey!.currentState?.openDrawer();
+                              } else {
+                                Scaffold.of(context).openDrawer();
+                              }
+                            },
                             backgroundColor: Colors.white.withValues(alpha: .1),
                             iconColor: Colors.white,
                             iconSize: 20,
@@ -79,8 +86,8 @@ class HeaderSection extends StatelessWidget {
                           user != null &&
                                   user.name != null &&
                                   user.name!.isNotEmpty
-                              ? 'Welcome back, ${user.name!.split(' ').first}'
-                              : 'Welcome back guest', // just incase firebase becomes dumb
+                              ? 'Welcome Dr. ${user.name!.split(' ').first}'
+                              : 'Welcome Doctor',
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -92,31 +99,10 @@ class HeaderSection extends StatelessWidget {
                     Row(
                       children: [
                         HeaderButton(
-                          icon: isdarkMode
+                          icon: isDarkMode
                               ? Icons.light_mode_outlined
                               : Icons.dark_mode_outlined,
                           onTap: toggleTheme,
-                        ),
-                        Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            HeaderButton(
-                              icon: Icons.notifications_outlined,
-                              onTap: () {},
-                            ),
-                            Positioned(
-                              right: -2,
-                              top: -2,
-                              child: Container(
-                                width: 8,
-                                height: 8,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFFFF1744),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ),
-                          ],
                         ),
                       ],
                     ),
@@ -125,7 +111,7 @@ class HeaderSection extends StatelessWidget {
 
                 const SizedBox(height: 8),
                 const Text(
-                  'How are you feeling today?',
+                  'Ready to help your patients today?',
                   style: TextStyle(fontSize: 14, color: Colors.white70),
                 ),
 
@@ -137,22 +123,26 @@ class HeaderSection extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Overall Health Score',
+                          'Today\'s Schedule',
                           style: TextStyle(fontSize: 12, color: Colors.white70),
                         ),
                         const SizedBox(height: 8),
                         Row(
                           children: [
-                            const Text(
-                              '100/100',
-                              style: TextStyle(
-                                fontSize: 32,
+                            const Icon(
+                              Icons.calendar_today,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+                              style: const TextStyle(
+                                fontSize: 16,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                               ),
                             ),
-                            const SizedBox(width: 16),
-                            ScoreBar(animation: animations.scoreAnimation),
                           ],
                         ),
                       ],
@@ -161,22 +151,40 @@ class HeaderSection extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         const Text(
-                          'Last Updated',
+                          'Status',
                           style: TextStyle(fontSize: 12, color: Colors.white70),
                         ),
                         const SizedBox(height: 4),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
+                            horizontal: 12,
+                            vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha:0.2),
+                            color: Colors.green.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.green.withOpacity(0.5),
+                              width: 1,
+                            ),
                           ),
-                          child: const Text(
-                            '2 minutes ago',
-                            style: TextStyle(fontSize: 12, color: Colors.white),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 6,
+                                height: 6,
+                                decoration: const BoxDecoration(
+                                  color: Colors.green,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              const Text(
+                                'Available',
+                                style: TextStyle(fontSize: 12, color: Colors.white),
+                              ),
+                            ],
                           ),
                         ),
                       ],

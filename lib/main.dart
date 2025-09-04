@@ -3,8 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:health/controllers/activities_provider.dart';
-import 'package:health/dr_views/dr_appointment_tab.dart';
-import 'package:health/dr_views/dr_chat_tab.dart';
 import 'package:health/dr_views/dr_home.dart';
 import 'package:health/firebase_options.dart';
 import 'package:health/controllers/sensor_provider.dart';
@@ -53,8 +51,6 @@ class MainApp extends StatelessWidget {
             'home': (context) => const HomePage(),
             'splash': (context) => const SplashScreenViews(),
             'drhome': (context) => const DrHomePage(),
-            'drappointment': (context) => const DrAppointmentTab(),
-            'drchat': (context) => const DrChatTab(),
           },
         );
       },

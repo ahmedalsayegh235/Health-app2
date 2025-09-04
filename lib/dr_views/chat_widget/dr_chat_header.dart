@@ -6,11 +6,11 @@ import 'package:health/helpers/theme_provider.dart';
 import 'package:health/controllers/user_provider.dart';
 import 'package:provider/provider.dart';
 
-class ChatHeader extends StatelessWidget {
+class DrChatHeader extends StatelessWidget {
   final bool isDark;
   final GlobalKey<ScaffoldState>? scaffoldKey;
 
-  const ChatHeader({
+  const DrChatHeader({
     super.key,
     required this.isDark,
     this.scaffoldKey,
@@ -59,85 +59,84 @@ class ChatHeader extends StatelessWidget {
   }
 
   Widget _buildTopRow(BuildContext context, user, VoidCallback toggleTheme) {
-  return Row(
-    crossAxisAlignment: CrossAxisAlignment.center,
-    children: [
-      if (scaffoldKey != null)
-        HeaderButton(
-          icon: Icons.menu,
-          onTap: () => scaffoldKey!.currentState?.openDrawer(),
-          backgroundColor: Colors.white.withValues(alpha:0.15),
-          iconColor: Colors.white,
-          iconSize: 20,
-          padding: const EdgeInsets.all(10),
-          borderRadius: BorderRadius.circular(12),
-        ),
-      if (scaffoldKey != null) const SizedBox(width: 12),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        if (scaffoldKey != null)
+          HeaderButton(
+            icon: Icons.menu,
+            onTap: () => scaffoldKey!.currentState?.openDrawer(),
+            backgroundColor: Colors.white.withValues(alpha: .15),
+            iconColor: Colors.white,
+            iconSize: 20,
+            padding: const EdgeInsets.all(10),
+            borderRadius: BorderRadius.circular(12),
+          ),
+        if (scaffoldKey != null) const SizedBox(width: 12),
 
-      // Greeting + Status
-      Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Flexible(
-                  child: Text(
-                    user != null && user.name != null && user.name!.isNotEmpty
-                        ? 'Hello, ${user.name!.split(' ').first}!'
-                        : 'Hello, Guest!',
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      letterSpacing: 0.2,
+        // Greeting + Status for Doctor
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      user != null && user.name != null && user.name!.isNotEmpty
+                          ? 'Hello, Dr. ${user.name!.split(' ').first}!'
+                          : 'Hello, Doctor!',
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: 0.2,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                const SizedBox(width: 6),
-                const StatusIndicator(), // <- Now right next to the greeting
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Connect with healthcare professionals',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.white.withValues(alpha:0.85),
-                fontWeight: FontWeight.w500,
+                  const SizedBox(width: 6),
+                  const StatusIndicator(), // <- Now right next to the greeting
+                ],
               ),
-            ),
-          ],
+              const SizedBox(height: 4),
+              Text(
+                'Manage patient consultations',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white.withValues(alpha: .85),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
 
-      const SizedBox(width: 8),
-      HeaderButton(
-        icon: isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
-        onTap: toggleTheme,
-        backgroundColor: Colors.white.withValues(alpha:0.15),
-        iconColor: Colors.white,
-        iconSize: 18,
-        padding: const EdgeInsets.all(8),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      const SizedBox(width: 8),
-      HeaderButton(
-        icon: Icons.search,
-        onTap: () => _showSearchDialog(context),
-        backgroundColor: Colors.white.withValues(alpha:0.15),
-        iconColor: Colors.white,
-        iconSize: 18,
-        padding: const EdgeInsets.all(8),
-        borderRadius: BorderRadius.circular(10),
-      ),
-    ],
-  );
-}
+        const SizedBox(width: 8),
+        HeaderButton(
+          icon: isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+          onTap: toggleTheme,
+          backgroundColor: Colors.white.withValues(alpha: .15),
+          iconColor: Colors.white,
+          iconSize: 18,
+          padding: const EdgeInsets.all(8),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        const SizedBox(width: 8),
+        HeaderButton(
+          icon: Icons.notifications_outlined,
+          onTap: () => _showNotificationsDialog(context),
+          backgroundColor: Colors.white.withValues(alpha: .15),
+          iconColor: Colors.white,
+          iconSize: 18,
+          padding: const EdgeInsets.all(8),
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ],
+    );
+  }
 
-
-  void _showSearchDialog(BuildContext context) {
+  void _showNotificationsDialog(BuildContext context) {
     final isDark = this.isDark;
     showDialog(
       context: context,
@@ -153,7 +152,7 @@ class ChatHeader extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha:0.3),
+                  color: Colors.black.withValues(alpha: 0.3),
                   blurRadius: 30,
                   offset: const Offset(0, 15),
                 ),
@@ -164,10 +163,10 @@ class ChatHeader extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.search, color: AppTheme.lightgreen, size: 24),
+                    Icon(Icons.notifications_outlined, color: AppTheme.lightgreen, size: 24),
                     const SizedBox(width: 12),
                     Text(
-                      'Search Doctors',
+                      'Notifications',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -178,49 +177,37 @@ class ChatHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 Container(
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: isDark
-                        ? Colors.grey.shade800.withValues(alpha:0.5)
+                        ? Colors.grey.shade800.withValues(alpha: .5)
                         : Colors.grey.shade100,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: AppTheme.lightgreen.withValues(alpha:0.3),
+                      color: AppTheme.lightgreen.withValues(alpha: .3),
                     ),
                   ),
-                  child: TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Search by name or specialization',
-                      hintStyle: TextStyle(
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.notifications_none,
+                        size: 48,
                         color: AppTheme.textSecondaryColor(isDark),
                       ),
-                      prefixIcon: Icon(Icons.person_search, color: AppTheme.lightgreen),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.all(16),
-                    ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'No new notifications',
+                        style: TextStyle(
+                          color: AppTheme.textSecondaryColor(isDark),
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 24),
                 Row(
                   children: [
-                    Expanded(
-                      child: TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: Text(
-                          'Cancel',
-                          style: TextStyle(
-                            color: AppTheme.textSecondaryColor(isDark),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
                     Expanded(
                       child: Container(
                         decoration: BoxDecoration(
@@ -228,10 +215,7 @@ class ChatHeader extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            // implement search
-                          },
+                          onPressed: () => Navigator.pop(context),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.transparent,
                             shadowColor: Colors.transparent,
@@ -241,7 +225,7 @@ class ChatHeader extends StatelessWidget {
                             ),
                           ),
                           child: const Text(
-                            'Search',
+                            'Close',
                             style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
                           ),
                         ),

@@ -149,7 +149,7 @@ Future<void> _login() async {
               exitController: _authAnimationController.exitController,
               formFade: _authAnimationController.formFade,
               isDarkMode: isDarkMode,
-              heightFactor: 0.80,
+              heightFactor: 0.85,
               logo: Container(
                 width: 120,
                 height: 120,
@@ -172,7 +172,7 @@ Future<void> _login() async {
                 ),
               ),
               title: "Welcome Back",
-              subtitle: "Sign in to continue your wellness journey",
+              subtitle:  "Sign in to continue your wellness journey",
               errorMessage: _errorMessage,
               fields: [
                 CustomTextFormField(
@@ -203,14 +203,6 @@ Future<void> _login() async {
                   isDarkMode: isDarkMode,
                 ),
                 const SizedBox(height: 5),
-                AuthLinkRow(
-                  leadingText: "Forgot your password?",
-                  actionText: "Reset",
-                  onTap: () {
-                    Navigator.pushNamed(context, 'reset_password');
-                  },
-                  isDarkMode: isDarkMode,
-                ),
               ],
             ),
           ],

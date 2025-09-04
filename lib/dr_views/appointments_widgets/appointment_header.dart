@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:health/components/custom_header_button.dart';
+import 'package:health/controllers/user_provider.dart';
 import 'package:health/helpers/app_theme.dart';
 import 'package:health/helpers/theme_provider.dart';
-import 'package:health/controllers/user_provider.dart';
 import 'package:provider/provider.dart';
 
 class DrAppointmentHeader extends StatelessWidget {
   final bool isDark;
   final TabController tabController;
   final GlobalKey<ScaffoldState> scaffoldKey;
-  final Map<String, int>? stats;
+  final Map<String, int> stats;
   final VoidCallback onCreateAppointment;
   final VoidCallback onCleanup;
 
@@ -18,7 +18,7 @@ class DrAppointmentHeader extends StatelessWidget {
     required this.isDark,
     required this.tabController,
     required this.scaffoldKey,
-    this.stats,
+    required this.stats,
     required this.onCreateAppointment,
     required this.onCleanup,
   });
@@ -116,7 +116,7 @@ class DrAppointmentHeader extends StatelessWidget {
                   Expanded(
                     child: _buildStatCard(
                       icon: Icons.event_available,
-                      title: '${stats?['available'] ?? 0}',
+                      title: '${stats['available'] ?? 0}',
                       subtitle: 'Available',
                       color: const Color(0xFF4ECDC4),
                     ),
@@ -125,7 +125,7 @@ class DrAppointmentHeader extends StatelessWidget {
                   Expanded(
                     child: _buildStatCard(
                       icon: Icons.pending_actions,
-                      title: '${stats?['pending'] ?? 0}',
+                      title: '${stats['pending'] ?? 0}',
                       subtitle: 'Pending',
                       color: const Color(0xFFFFB74D),
                     ),
@@ -134,7 +134,7 @@ class DrAppointmentHeader extends StatelessWidget {
                   Expanded(
                     child: _buildStatCard(
                       icon: Icons.check_circle,
-                      title: '${stats?['booked'] ?? 0}',
+                      title: '${stats['booked'] ?? 0}',
                       subtitle: 'Booked',
                       color: const Color(0xFF66BB6A),
                     ),

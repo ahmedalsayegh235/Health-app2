@@ -83,8 +83,8 @@ class DrCustomDrawer extends StatelessWidget {
                 //   Icons.health_and_safety,
                 //   'Health Records',
                 // ),
-                // _buildDrawerItem(context, Icons.calendar_today, 'Appointments'),
-                // _buildDrawerItem(context, Icons.medication, 'Medications'),
+                _buildDrawerItem(context, Icons.calendar_today, 'Appointments'),
+                _buildDrawerItem(context, Icons.chat_bubble, 'Chat'),
                 // _buildDrawerItem(context, Icons.local_hospital, 'Emergency'),
                 // _buildDrawerItem(context, Icons.settings, 'Settings'),
                 Divider(

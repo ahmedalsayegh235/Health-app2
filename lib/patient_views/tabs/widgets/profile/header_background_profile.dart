@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:health/helpers/app_theme.dart';
 
 class HeaderBackground extends StatelessWidget {
-  const HeaderBackground({Key? key}) : super(key: key);
+  const HeaderBackground({super.key});
 
   @override
   Widget build(BuildContext context) {

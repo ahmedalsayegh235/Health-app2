@@ -87,7 +87,7 @@ class _ECGTabState extends State<ECGTab> with TickerProviderStateMixin {
     }
     
     // Parse from note as fallback
-    final note = reading.note ?? '';
+    final note = reading.note;
     final rhythmMatch = RegExp(r'Rhythm: ([^|]+)').firstMatch(note);
     return rhythmMatch?.group(1)?.trim() ?? 'Unknown';
   }
@@ -99,7 +99,7 @@ class _ECGTabState extends State<ECGTab> with TickerProviderStateMixin {
     }
     
     // Parse from note as fallback
-    final note = reading.note ?? '';
+    final note = reading.note;
     final qrsMatch = RegExp(r'QRS count: (\d+)').firstMatch(note);
     return int.tryParse(qrsMatch?.group(1) ?? '0') ?? 0;
   }
@@ -140,15 +140,15 @@ class _ECGTabState extends State<ECGTab> with TickerProviderStateMixin {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      Colors.green.withOpacity(0.1),
-                      Colors.lightGreen.withOpacity(0.05),
+                      Colors.green.withValues(alpha: .1),
+                      Colors.lightGreen.withValues(alpha: .05),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: Colors.green.withOpacity(0.2),
+                    color: Colors.green.withValues(alpha: .2),
                     width: 1,
                   ),
                 ),
@@ -206,7 +206,7 @@ class _ECGTabState extends State<ECGTab> with TickerProviderStateMixin {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(0.1),
+                          color: Colors.green.withValues(alpha: .1),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -252,7 +252,7 @@ class _ECGTabState extends State<ECGTab> with TickerProviderStateMixin {
                       const SizedBox(height: 12),
                       LinearProgressIndicator(
                         value: provider.ecgRecordingProgress,
-                        backgroundColor: Colors.grey.withOpacity(0.3),
+                        backgroundColor: Colors.grey.withValues(alpha: .3),
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
                         minHeight: 4,
                       ),
@@ -352,10 +352,10 @@ class _ECGTabState extends State<ECGTab> with TickerProviderStateMixin {
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.1),
+                  color: Colors.orange.withValues(alpha: .1),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: Colors.orange.withOpacity(0.2),
+                    color: Colors.orange.withValues(alpha: .2),
                     width: 1,
                   ),
                 ),

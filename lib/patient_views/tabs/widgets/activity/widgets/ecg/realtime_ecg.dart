@@ -50,7 +50,7 @@ class _RealTimeECGChartState extends State<RealTimeECGChart>
         color: widget.isDark ? const Color(0xFF1a1a1a) : Colors.black87,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.green.withOpacity(0.3),
+          color: Colors.green.withValues(alpha: .3),
           width: 1,
         ),
       ),
@@ -90,14 +90,14 @@ class _RealTimeECGChartState extends State<RealTimeECGChart>
         children: [
           Icon(
             Icons.show_chart,
-            color: Colors.green.withOpacity(0.5),
+            color: Colors.green.withValues(alpha: .5),
             size: 32,
           ),
           const SizedBox(height: 8),
           Text(
             'Place fingers on sensors',
             style: TextStyle(
-              color: Colors.green.withOpacity(0.7),
+              color: Colors.green.withValues(alpha: .7),
               fontSize: 12,
             ),
           ),
@@ -121,7 +121,7 @@ class _RealTimeECGChartState extends State<RealTimeECGChart>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.red.withOpacity(0.9),
+          color: Colors.red.withValues(alpha:0.9),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -264,7 +264,7 @@ class _DetailedECGChartState extends State<DetailedECGChart> {
           decoration: BoxDecoration(
             color: widget.isDark ? const Color(0xFF1a1a1a) : Colors.black87,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.green.withOpacity(0.3)),
+            border: Border.all(color: Colors.green.withValues(alpha:0.3)),
           ),
           child: Stack(
             children: [
@@ -328,7 +328,7 @@ class _DetailedECGChartState extends State<DetailedECGChart> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: _getQualityColor().withOpacity(0.2),
+              color: _getQualityColor().withValues(alpha:0.2),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
@@ -356,7 +356,7 @@ class _DetailedECGChartState extends State<DetailedECGChart> {
     return Container(
       height: 250,
       decoration: BoxDecoration(
-        color: Colors.grey.withOpacity(0.1),
+        color: Colors.grey.withValues(alpha:0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: const Center(
@@ -481,11 +481,11 @@ class MedicalGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final majorPaint = Paint()
-      ..color = Colors.green.withOpacity(0.3)
+      ..color = Colors.green.withValues(alpha:0.3)
       ..strokeWidth = 1.0;
 
     final minorPaint = Paint()
-      ..color = Colors.green.withOpacity(0.1)
+      ..color = Colors.green.withValues(alpha:0.1)
       ..strokeWidth = 0.5;
 
     // Vertical grid lines (time - 0.2s major, 0.04s minor)
@@ -520,7 +520,7 @@ class MedicalGridPainter extends CustomPainter {
 
     // Moving sweep line for real-time effect
     final sweepPaint = Paint()
-      ..color = Colors.green.withOpacity(0.6)
+      ..color = Colors.green.withValues(alpha:0.6)
       ..strokeWidth = 2.0;
     
     final sweepX = (animationValue * size.width) % size.width;
@@ -545,11 +545,11 @@ class DetailedMedicalGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final majorPaint = Paint()
-      ..color = Colors.green.withOpacity(0.4)
+      ..color = Colors.green.withValues(alpha:0.4)
       ..strokeWidth = 1.0;
 
     final minorPaint = Paint()
-      ..color = Colors.green.withOpacity(0.2)
+      ..color = Colors.green.withValues(alpha:0.2)
       ..strokeWidth = 0.5;
 
     // Vertical lines (0.2s major intervals)

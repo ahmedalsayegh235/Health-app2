@@ -51,7 +51,7 @@ class AppointmentHeader extends StatelessWidget {
                     onTap: () {
                       scaffoldKey.currentState?.openDrawer();
                     },
-                    backgroundColor: Colors.white.withOpacity(0.1),
+                    backgroundColor: Colors.white.withValues(alpha:0.1),
                     iconColor: Colors.white,
                     iconSize: 20,
                     padding: const EdgeInsets.all(8),
@@ -77,7 +77,7 @@ class AppointmentHeader extends StatelessWidget {
                           'Manage your appointments',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.white.withOpacity(0.8),
+                            color: Colors.white.withValues(alpha:0.8),
                           ),
                         ),
                       ],
@@ -100,10 +100,10 @@ class AppointmentHeader extends StatelessWidget {
               Container(
                 height: 48,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.12),
+                  color: Colors.white.withValues(alpha:0.12),
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.16),
+                    color: Colors.white.withValues(alpha:0.16),
                     width: 1,
                   ),
                 ),
@@ -111,17 +111,17 @@ class AppointmentHeader extends StatelessWidget {
                   controller: tabController,
                   indicator: BoxDecoration(
                     borderRadius: BorderRadius.circular(24),
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha:0.2),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha:0.1),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
                     ],
                   ),
                   labelColor: Colors.white,
-                  unselectedLabelColor: Colors.white.withOpacity(0.7),
+                  unselectedLabelColor: Colors.white.withValues(alpha:0.7),
                   labelStyle: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
