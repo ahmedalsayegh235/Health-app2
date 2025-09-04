@@ -134,19 +134,14 @@ class _StatCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: color.withValues(alpha: .1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
                     icon,
                     color: color,
-                    size: 20,
+                    size: 35,
                   ),
-                ),
-                Icon(
-                  Icons.trending_up,
-                  color: AppTheme.textSecondaryColor(isDarkMode),
-                  size: 16,
                 ),
               ],
             ),
