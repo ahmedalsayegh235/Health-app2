@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:health/controllers/animation/home_animation_controller.dart';
 import 'package:health/dr_views/home_widgets/header_section.dart';
 import 'package:health/dr_views/home_widgets/next_app.dart';
-import 'package:health/dr_views/home_widgets/quick_action.dart';
 import 'package:health/dr_views/home_widgets/stats.dart';
 import 'package:health/helpers/theme_provider.dart';
 import 'package:health/controllers/user_provider.dart';
@@ -15,6 +14,7 @@ class DrHomeTab extends StatefulWidget {
   final HomeAnimations animations;
   final GlobalKey<ScaffoldState>? scaffoldKey;
 
+
   const DrHomeTab({
     super.key,
     required this.vsync,
@@ -26,19 +26,18 @@ class DrHomeTab extends StatefulWidget {
   State<DrHomeTab> createState() => _DrHomeTabState();
 }
 
-class _DrHomeTabState extends State<DrHomeTab>
-    with TickerProviderStateMixin {
+class _DrHomeTabState extends State<DrHomeTab> with TickerProviderStateMixin {
   late AnimationController _staggerController;
 
   Animation<double>? _headerAnimation;
   Animation<double>? _statsAnimation;
   Animation<double>? _appointmentAnimation;
-  Animation<double>? _quickActionsAnimation;
+
 
   Animation<Offset>? _headerSlideAnimation;
   Animation<Offset>? _statsSlideAnimation;
   Animation<Offset>? _appointmentSlideAnimation;
-  Animation<Offset>? _quickActionsSlideAnimation;
+
 
   @override
   void initState() {
@@ -73,52 +72,30 @@ class _DrHomeTabState extends State<DrHomeTab>
       ),
     );
 
-    _quickActionsAnimation = Tween(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _staggerController,
-        curve: const Interval(0.6, 1.0, curve: Curves.easeOutCubic),
-      ),
-    );
 
-    _headerSlideAnimation = Tween<Offset>(
-      begin: const Offset(0.0, -0.5),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _staggerController,
-        curve: const Interval(0.0, 0.3, curve: Curves.easeOutCubic),
-      ),
-    );
+    _headerSlideAnimation =
+        Tween<Offset>(begin: const Offset(0.0, -0.5), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _staggerController,
+            curve: const Interval(0.0, 0.3, curve: Curves.easeOutCubic),
+          ),
+        );
 
-    _statsSlideAnimation = Tween<Offset>(
-      begin: const Offset(0.0, 0.3),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _staggerController,
-        curve: const Interval(0.2, 0.5, curve: Curves.easeOutCubic),
-      ),
-    );
+    _statsSlideAnimation =
+        Tween<Offset>(begin: const Offset(0.0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _staggerController,
+            curve: const Interval(0.2, 0.5, curve: Curves.easeOutCubic),
+          ),
+        );
 
-    _appointmentSlideAnimation = Tween<Offset>(
-      begin: const Offset(-0.3, 0.0),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _staggerController,
-        curve: const Interval(0.4, 0.7, curve: Curves.easeOutCubic),
-      ),
-    );
-
-    _quickActionsSlideAnimation = Tween<Offset>(
-      begin: const Offset(0.3, 0.0),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _staggerController,
-        curve: const Interval(0.6, 1.0, curve: Curves.easeOutCubic),
-      ),
-    );
+    _appointmentSlideAnimation =
+        Tween<Offset>(begin: const Offset(-0.3, 0.0), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _staggerController,
+            curve: const Interval(0.4, 0.7, curve: Curves.easeOutCubic),
+          ),
+        );
   }
 
   @override
@@ -183,7 +160,11 @@ class _DrHomeTabState extends State<DrHomeTab>
                           scale: Tween<double>(begin: 0.9, end: 1.0).animate(
                             CurvedAnimation(
                               parent: _staggerController,
-                              curve: const Interval(0.2, 0.5, curve: Curves.easeOutBack),
+                              curve: const Interval(
+                                0.2,
+                                0.5,
+                                curve: Curves.easeOutBack,
+                              ),
                             ),
                           ),
                           child: DrStatsGrid(isDarkMode: isDarkMode),
@@ -193,7 +174,8 @@ class _DrHomeTabState extends State<DrHomeTab>
 
                   const SizedBox(height: 24),
 
-                  if (_appointmentAnimation != null && _appointmentSlideAnimation != null)
+                  if (_appointmentAnimation != null &&
+                      _appointmentSlideAnimation != null)
                     FadeTransition(
                       opacity: _appointmentAnimation!,
                       child: SlideTransition(
@@ -202,7 +184,11 @@ class _DrHomeTabState extends State<DrHomeTab>
                           scale: Tween<double>(begin: 0.95, end: 1.0).animate(
                             CurvedAnimation(
                               parent: _staggerController,
-                              curve: const Interval(0.4, 0.7, curve: Curves.easeOutBack),
+                              curve: const Interval(
+                                0.4,
+                                0.7,
+                                curve: Curves.easeOutBack,
+                              ),
                             ),
                           ),
                           child: DrNextAppointmentCard(isDarkMode: isDarkMode),
@@ -211,25 +197,6 @@ class _DrHomeTabState extends State<DrHomeTab>
                     ),
 
                   const SizedBox(height: 24),
-
-                  if (_quickActionsAnimation != null && _quickActionsSlideAnimation != null)
-                    FadeTransition(
-                      opacity: _quickActionsAnimation!,
-                      child: SlideTransition(
-                        position: _quickActionsSlideAnimation!,
-                        child: ScaleTransition(
-                          scale: Tween<double>(begin: 0.95, end: 1.0).animate(
-                            CurvedAnimation(
-                              parent: _staggerController,
-                              curve: const Interval(0.6, 1.0, curve: Curves.easeOutBack),
-                            ),
-                          ),
-                          child: DrQuickActions(isDarkMode: isDarkMode),
-                        ),
-                      ),
-                    ),
-
-                  const SizedBox(height: 20),
                 ],
               ),
             ),

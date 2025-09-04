@@ -25,6 +25,7 @@ class _ChatScreenState extends State<ChatScreen>
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
   bool _isTyping = false;
+  // ignore: unused_field
   String _messagePreview = '';
 
   @override
@@ -363,7 +364,7 @@ void initState() {
                 boxShadow: [
                   BoxShadow(
                     color: isMe 
-                        ? AppTheme.lightgreen.withOpacity(0.3)
+                        ? AppTheme.lightgreen.withValues(alpha: .3)
                         : AppTheme.shadowColor(isDark),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
@@ -386,7 +387,7 @@ void initState() {
                     _formatTime(msg.timestamp),
                     style: TextStyle(
                       color: isMe 
-                          ? Colors.white.withOpacity(0.8)
+                          ? Colors.white.withValues(alpha: .8)
                           : AppTheme.textSecondaryColor(isDark),
                       fontSize: 11,
                     ),
@@ -465,7 +466,7 @@ void initState() {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: AppTheme.lightgreen.withOpacity(0.1),
+                color: AppTheme.lightgreen.withValues(alpha: .1),
                 borderRadius: BorderRadius.circular(22),
               ),
               child: IconButton(
@@ -487,12 +488,12 @@ void initState() {
               child: Container(
                 decoration: BoxDecoration(
                   color: isDark
-                      ? Colors.grey.shade800.withOpacity(0.5)
+                      ? Colors.grey.shade800.withValues(alpha: .5)
                       : Colors.grey.shade100,
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
                     color: _isTyping 
-                        ? AppTheme.lightgreen.withOpacity(0.5)
+                        ? AppTheme.lightgreen.withValues(alpha: .5)
                         : Colors.transparent,
                     width: 1,
                   ),
@@ -536,7 +537,7 @@ void initState() {
                 boxShadow: _isTyping
                     ? [
                         BoxShadow(
-                          color: AppTheme.lightgreen.withOpacity(0.4),
+                          color: AppTheme.lightgreen.withValues(alpha: .4),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),

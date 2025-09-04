@@ -72,7 +72,7 @@ class ProfileContent extends StatelessWidget {
                   user.role ?? 'User',
                   style: TextStyle(
                     fontSize: 16,
-                    color: Colors.white.withOpacity(0.8),
+                    color: Colors.white.withValues(alpha:0.8),
                   ),
                 ),
               ],
@@ -170,7 +170,7 @@ class ProfileContent extends StatelessWidget {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: AppTheme.darkgreen.withOpacity(0.4),
+                          color: AppTheme.darkgreen.withValues(alpha:0.4),
                           blurRadius: 15,
                           offset: const Offset(0, 8),
                         ),

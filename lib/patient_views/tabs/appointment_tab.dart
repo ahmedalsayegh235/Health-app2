@@ -212,9 +212,9 @@ class _AppointmentTabState extends State<AppointmentTab>
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.red.withOpacity(0.1),
+              color: Colors.red.withValues(alpha:0.1),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.red.withOpacity(0.3)),
+              border: Border.all(color: Colors.red.withValues(alpha:0.3)),
             ),
             child: Icon(Icons.error_outline, color: Colors.red, size: 48),
           ),
@@ -271,8 +271,8 @@ class _AppointmentTabState extends State<AppointmentTab>
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: isDarkMode
-                    ? Colors.white.withOpacity(0.1)
-                    : Colors.grey.withOpacity(0.2),
+                    ? Colors.white.withValues(alpha:0.1)
+                    : Colors.grey.withValues(alpha:0.2),
               ),
             ),
             child: Icon(

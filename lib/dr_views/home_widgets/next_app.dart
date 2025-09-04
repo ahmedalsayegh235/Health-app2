@@ -175,28 +175,6 @@ class DrNextAppointmentCard extends StatelessWidget {
                     ),
                     
                     const SizedBox(height: 16),
-                    
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () {
-                              // Navigate to appointment details or video call
-                            },
-                            style: AppTheme.primaryButtonStyle(isDarkMode),
-                            child: const Text('Start Session'),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        OutlinedButton(
-                          onPressed: () {
-                            // Show reschedule options
-                          },
-                          style: AppTheme.secondaryButtonStyle(isDarkMode),
-                          child: const Icon(Icons.schedule, size: 18),
-                        ),
-                      ],
-                    ),
                   ],
                 ),
               ),
@@ -246,13 +224,6 @@ class _NoAppointmentCard extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                // Navigate to create new appointment slots
-              },
-              style: AppTheme.primaryButtonStyle(isDarkMode),
-              child: const Text('Create Availability'),
-            ),
           ],
         ),
       ),

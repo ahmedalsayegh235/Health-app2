@@ -16,7 +16,7 @@ class AnimatedAuthForm extends StatelessWidget {
   final List<Widget>? bottomWidget; // extra widgets at the bottom like forgot password or sign up link
 
   const AnimatedAuthForm({
-    Key? key,
+    super.key,
     required this.slideController,
     required this.exitController,
     required this.formFade,
@@ -29,7 +29,7 @@ class AnimatedAuthForm extends StatelessWidget {
     required this.fields,
     this.actionButton,
     this.bottomWidget,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

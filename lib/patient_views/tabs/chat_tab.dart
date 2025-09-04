@@ -107,7 +107,7 @@ class _ChatTabState extends State<ChatTab>
                   end: Alignment.bottomCenter,
                   colors: [
                     AppTheme.backgroundColor(isDark),
-                    AppTheme.backgroundColor(isDark).withOpacity(0.95),
+                    AppTheme.backgroundColor(isDark).withValues(alpha:0.95),
                   ],
                 ),
               ),
@@ -331,7 +331,7 @@ class _ChatTabState extends State<ChatTab>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.lightgreen.withOpacity(0.3),
+            color: AppTheme.lightgreen.withValues(alpha:0.3),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),

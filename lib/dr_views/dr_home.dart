@@ -85,6 +85,12 @@ class _DrHomePageState extends State<DrHomePage> with TickerProviderStateMixin {
       case 'Logout':
         _logoutUser();
         break;
+      case 'Appointments':
+        setState(() => _currentNavIndex = 0);
+        break;
+      case 'Chat':
+        setState(() => _currentNavIndex = 2);
+        break;
       default:
         break;
     }
@@ -98,15 +104,15 @@ class _DrHomePageState extends State<DrHomePage> with TickerProviderStateMixin {
         return DrAppointmentTab(scaffoldKey: _scaffoldKey);
       case 1:
         return DrHomeTab(
-          vsync: this, 
+          vsync: this,
           animations: _animations,
           scaffoldKey: _scaffoldKey,
         );
       case 2:
-        return DrChatTab();
+        return DrChatTab(scaffoldKey: _scaffoldKey,);
       default:
         return DrHomeTab(
-          vsync: this, 
+          vsync: this,
           animations: _animations,
           scaffoldKey: _scaffoldKey,
         );

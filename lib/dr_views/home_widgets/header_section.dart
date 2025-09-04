@@ -104,27 +104,6 @@ class DrHeaderSection extends StatelessWidget {
                               : Icons.dark_mode_outlined,
                           onTap: toggleTheme,
                         ),
-                        Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            HeaderButton(
-                              icon: Icons.notifications_outlined,
-                              onTap: () {},
-                            ),
-                            Positioned(
-                              right: -2,
-                              top: -2,
-                              child: Container(
-                                width: 8,
-                                height: 8,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFFFF1744),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
                       ],
                     ),
                   ],
