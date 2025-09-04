@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:health/components/custom_button.dart';
 import 'package:health/helpers/app_theme.dart';
 import 'package:health/helpers/theme_provider.dart';
 import 'package:health/models/chat_model.dart';

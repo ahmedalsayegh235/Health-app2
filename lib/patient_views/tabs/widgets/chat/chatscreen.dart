@@ -631,22 +631,6 @@ void initState() {
                 // View medical history
               },
             ),
-            ListTile(
-              leading: Icon(Icons.notifications, color: AppTheme.lightgreen),
-              title: Text('Mute Notifications'),
-              onTap: () {
-                Navigator.pop(context);
-                // Mute notifications
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.block, color: Colors.red),
-              title: Text('Block User'),
-              onTap: () {
-                Navigator.pop(context);
-                _showBlockConfirmation(context);
-              },
-            ),
             const SizedBox(height: 10),
             CustomButton(
               text: 'Close',
@@ -712,28 +696,7 @@ void initState() {
     );
   }
 
-  void _showBlockConfirmation(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Block User'),
-        content: Text('Are you sure you want to block Dr. ${widget.otherUser.name}? You will no longer receive messages from them.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Implement block functionality
-            },
-            child: Text('Block', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-  }
+ 
 
  String _formatTime(dynamic timestamp) {
   if (timestamp == null) return '';

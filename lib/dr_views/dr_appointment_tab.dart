@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:health/controllers/doctor_ctrl/appointments_ctrl.dart';
 import 'package:health/dr_views/appointments_widgets/appointment_card.dart';
 import 'package:health/dr_views/appointments_widgets/appointment_dialog.dart';
 import 'package:health/dr_views/appointments_widgets/appointment_header.dart';
@@ -29,17 +30,18 @@ class _DrAppointmentTabState extends State<DrAppointmentTab>
   late Animation<double> _listFadeAnimation;
   late Animation<Offset> _listSlideAnimation;
   late Animation<double> _fabScaleAnimation;
-
-
+  late AppointmentsController _appointmentsController;
 
   @override
   void initState() {
     super.initState();
+    final user = Provider.of<UserProvider>(context, listen: false).user;
+    if (user?.id != null) {
+      _appointmentsController = AppointmentsController(doctorId: user!.id!);
+    }
     _tabController = TabController(length: 3, vsync: this);
     _setupAnimations();
     _startAnimations();
-
-    // Auto cleanup past appointments every hour
     _scheduleAutoCleanup();
   }
 
@@ -94,10 +96,9 @@ class _DrAppointmentTabState extends State<DrAppointmentTab>
   }
 
   void _scheduleAutoCleanup() {
-    // Run cleanup every hour
     Future.delayed(const Duration(hours: 1), () {
       if (mounted) {
-        _cleanupPastAppointments();
+        _appointmentsController.cleanupPastAppointments();
         _scheduleAutoCleanup();
       }
     });
@@ -112,133 +113,48 @@ class _DrAppointmentTabState extends State<DrAppointmentTab>
     super.dispose();
   }
 
-  Future<void> _acceptAppointment(String doctorId, String appointmentId) async {
+  Future<void> _onAccept(String appointmentId) async {
     try {
-      final docRef = FirebaseFirestore.instance
-          .collection('users')
-          .doc(doctorId)
-          .collection('appointments')
-          .doc(appointmentId);
-
-      final snap = await docRef.get();
-      if (!snap.exists) return;
-
-      final data = snap.data() as Map<String, dynamic>;
-      final patientId = data['patientId'];
-
-      String patientName = "";
-      if (patientId != null) {
-        final patientSnap = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(patientId)
-            .get();
-        if (patientSnap.exists) {
-          final patientData = patientSnap.data() as Map<String, dynamic>;
-          patientName = patientData['name'] ?? "";
-        }
-      }
-
-      await docRef.update({
-        'status': 'booked',
-        'patientName': patientName,
-        'acceptedAt': FieldValue.serverTimestamp(),
-      });
-
-      _showSuccessSnackBar('Appointment accepted successfully');
+      await _appointmentsController.acceptAppointment(appointmentId);
+      _showSuccessSnackBar("Appointment accepted successfully");
     } catch (e) {
-      _showErrorSnackBar('Failed to accept appointment: ${e.toString()}');
+      _showErrorSnackBar("Failed to accept appointment: $e");
     }
   }
 
-  Future<void> _rejectAppointment(String doctorId, String appointmentId) async {
+  Future<void> _onReject(String appointmentId) async {
     try {
-      final docRef = FirebaseFirestore.instance
-          .collection('users')
-          .doc(doctorId)
-          .collection('appointments')
-          .doc(appointmentId);
-
-      await docRef.update({
-        'status': 'available',
-        'patientId': FieldValue.delete(),
-        'patientName': FieldValue.delete(),
-        'requestedAt': FieldValue.delete(),
-        'rejectedAt': FieldValue.serverTimestamp(),
-      });
-
+      await _appointmentsController.rejectAppointment(appointmentId);
       _showSuccessSnackBar('Appointment rejected');
     } catch (e) {
-      _showErrorSnackBar('Failed to reject appointment: ${e.toString()}');
+      _showErrorSnackBar('Failed to reject appointment: $e');
     }
   }
 
-  Future<void> _cancelAppointment(String doctorId, String appointmentId) async {
+  Future<void> _onCancel(String appointmentId) async {
     try {
-      final docRef = FirebaseFirestore.instance
-          .collection('users')
-          .doc(doctorId)
-          .collection('appointments')
-          .doc(appointmentId);
-
-      await docRef.update({
-        'status': 'available',
-        'patientId': FieldValue.delete(),
-        'patientName': FieldValue.delete(),
-        'requestedAt': FieldValue.delete(),
-        'acceptedAt': FieldValue.delete(),
-        'cancelledAt': FieldValue.serverTimestamp(),
-      });
-
+      await _appointmentsController.cancelAppointment(appointmentId);
       _showSuccessSnackBar('Appointment cancelled');
     } catch (e) {
-      _showErrorSnackBar('Failed to cancel appointment: ${e.toString()}');
+      _showErrorSnackBar('Failed to cancel appointment: $e');
     }
   }
 
-  Future<void> _deleteAppointment(String doctorId, String appointmentId) async {
+  Future<void> _onDelete(String appointmentId) async {
     try {
-      final docRef = FirebaseFirestore.instance
-          .collection('users')
-          .doc(doctorId)
-          .collection('appointments')
-          .doc(appointmentId);
-
-      await docRef.delete();
-
+      await _appointmentsController.deleteAppointment(appointmentId);
       _showSuccessSnackBar('Appointment deleted');
     } catch (e) {
-      _showErrorSnackBar('Failed to delete appointment: ${e.toString()}');
+      _showErrorSnackBar('Failed to delete appointment: $e');
     }
   }
 
-  Future<void> _cleanupPastAppointments() async {
-    final user = Provider.of<UserProvider>(context, listen: false).user;
-    if (user?.id == null) return;
-
+  Future<void> _onCleanup() async {
     try {
-      final now = DateTime.now();
-      final appointmentsRef = FirebaseFirestore.instance
-          .collection('users')
-          .doc(user!.id!)
-          .collection('appointments');
-
-      final snapshot = await appointmentsRef.get();
-      final batch = FirebaseFirestore.instance.batch();
-
-      for (final doc in snapshot.docs) {
-        final data = doc.data();
-        final endTime = (data['endTime'] as Timestamp).toDate();
-
-        // Delete appointments that ended more than 24 hours ago
-        if (endTime.isBefore(now.subtract(const Duration(hours: 24)))) {
-          batch.delete(doc.reference);
-        }
-      }
-
-      await batch.commit();
+      await _appointmentsController.cleanupPastAppointments();
       _showSuccessSnackBar('Past appointments cleaned up');
     } catch (e) {
-      _showErrorSnackBar('Failed to cleanup appointments: ${e.toString()}');
+      _showErrorSnackBar('Failed to cleanup appointments: $e');
     }
   }
 
@@ -259,35 +175,9 @@ class _DrAppointmentTabState extends State<DrAppointmentTab>
     );
 
     if (result == true) {
-      // Restart animations after creation
       _listController.reset();
       _listController.forward();
     }
-  }
-
-  Map<String, int> _calculateStats(List<DocumentSnapshot> docs) {
-    int available = 0;
-    int pending = 0;
-    int booked = 0;
-
-    for (final doc in docs) {
-      final data = doc.data() as Map<String, dynamic>;
-      final status = data['status'] ?? 'available';
-
-      switch (status) {
-        case 'available':
-          available++;
-          break;
-        case 'pending':
-          pending++;
-          break;
-        case 'booked':
-          booked++;
-          break;
-      }
-    }
-
-    return {'available': available, 'pending': pending, 'booked': booked};
   }
 
   void _showSuccessSnackBar(String message) {
@@ -327,21 +217,13 @@ class _DrAppointmentTabState extends State<DrAppointmentTab>
   }
 
   Widget _buildAppointmentList(
-    String doctorId,
     bool isDarkMode,
     String status,
   ) {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('users')
-          .doc(doctorId)
-          .collection('appointments')
-          .where('status', isEqualTo: status)
-          .orderBy('startTime', descending: false)
-          .snapshots(),
+      stream: _appointmentsController.getAppointmentsByStatus(status),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          print(snapshot.error);
           return _buildErrorState(isDarkMode);
         }
 
@@ -350,7 +232,6 @@ class _DrAppointmentTabState extends State<DrAppointmentTab>
         }
 
         final docs = snapshot.data!.docs;
-        // Filter out past appointments for display
         final now = DateTime.now();
         final filteredDocs = docs.where((doc) {
           final data = doc.data() as Map<String, dynamic>;
@@ -380,10 +261,10 @@ class _DrAppointmentTabState extends State<DrAppointmentTab>
                   status: status,
                   isDarkMode: isDarkMode,
                   index: index,
-                  onAccept: () => _acceptAppointment(doctorId, doc.id),
-                  onReject: () => _rejectAppointment(doctorId, doc.id),
-                  onCancel: () => _cancelAppointment(doctorId, doc.id),
-                  onDelete: () => _deleteAppointment(doctorId, doc.id),
+                  onAccept: () => _onAccept(doc.id),
+                  onReject: () => _onReject(doc.id),
+                  onCancel: () => _onCancel(doc.id),
+                  onDelete: () => _onDelete(doc.id),
                 );
               },
             ),
@@ -509,74 +390,73 @@ class _DrAppointmentTabState extends State<DrAppointmentTab>
     );
   }
 
- @override
-Widget build(BuildContext context) {
-  final user = Provider.of<UserProvider>(context).user;
-  final isDarkMode = Provider.of<ThemeProvider>(context).isDarkMode;
+  @override
+  Widget build(BuildContext context) {
+    final user = Provider.of<UserProvider>(context).user;
+    final isDarkMode = Provider.of<ThemeProvider>(context).isDarkMode;
 
-  if (user?.id == null) {
-    return const Center(child: Text('Please login as a doctor'));
-  }
+    if (user?.id == null) {
+      return const Center(child: Text('Please login as a doctor'));
+    }
 
-  return Scaffold(
-    backgroundColor: AppTheme.backgroundColor(isDarkMode),
-    body: StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('users')
-          .doc(user!.id!)
-          .collection('appointments')
-          .snapshots(),
-      builder: (context, snapshot) {
-        final stats = snapshot.hasData
-            ? _calculateStats(snapshot.data!.docs)
-            : {'available': 0, 'pending': 0, 'booked': 0};
+    return Scaffold(
+      backgroundColor: AppTheme.backgroundColor(isDarkMode),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('users')
+            .doc(user!.id!)
+            .collection('appointments')
+            .snapshots(),
+        builder: (context, snapshot) {
+          final stats = snapshot.hasData
+              ? _appointmentsController.calculateStats(snapshot.data!.docs)
+              : {'available': 0, 'pending': 0, 'booked': 0};
 
-        return Column(
-          children: [
-            SlideTransition(
-              position: _headerSlideAnimation,
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: DrAppointmentHeader(
-                  isDark: isDarkMode,
-                  tabController: _tabController,
-                  scaffoldKey: widget.scaffoldKey, 
-                  stats: stats,
-                  onCreateAppointment: _showCreateDialog,
-                  onCleanup: _cleanupPastAppointments,
+          return Column(
+            children: [
+              SlideTransition(
+                position: _headerSlideAnimation,
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: DrAppointmentHeader(
+                    isDark: isDarkMode,
+                    tabController: _tabController,
+                    scaffoldKey: widget.scaffoldKey,
+                    stats: stats,
+                    onCreateAppointment: _showCreateDialog,
+                    onCleanup: _onCleanup,
+                  ),
                 ),
               ),
-            ),
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildAppointmentList(user.id!, isDarkMode, 'available'),
-                  _buildAppointmentList(user.id!, isDarkMode, 'pending'),
-                  _buildAppointmentList(user.id!, isDarkMode, 'booked'),
-                ],
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildAppointmentList(isDarkMode, 'available'),
+                    _buildAppointmentList(isDarkMode, 'pending'),
+                    _buildAppointmentList(isDarkMode, 'booked'),
+                  ],
+                ),
               ),
-            ),
-          ],
-        );
-      },
-    ),
-    floatingActionButton: ScaleTransition(
-      scale: _fabScaleAnimation,
-      child: FloatingActionButton.extended(
-        onPressed: _showCreateDialog,
-        backgroundColor: AppTheme.lightgreen,
-        foregroundColor: Colors.white,
-        elevation: 8,
-        label: const Text('New Appointment'),
-        icon: const Icon(Icons.add),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+            ],
+          );
+        },
+      ),
+      floatingActionButton: ScaleTransition(
+        scale: _fabScaleAnimation,
+        child: FloatingActionButton.extended(
+          onPressed: _showCreateDialog,
+          backgroundColor: AppTheme.lightgreen,
+          foregroundColor: Colors.white,
+          elevation: 8,
+          label: const Text('New Appointment'),
+          icon: const Icon(Icons.add),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
       ),
-    ),
-    floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-  );
-}
-
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+    );
+  }
 }

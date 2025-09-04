@@ -95,20 +95,27 @@ class _DrHomePageState extends State<DrHomePage> with TickerProviderStateMixin {
   Widget _getCurrentTab() {
     switch (_currentNavIndex) {
       case 0:
-        return DrAppointmentTab(scaffoldKey: _scaffoldKey,);
+        return DrAppointmentTab(scaffoldKey: _scaffoldKey);
       case 1:
-        return DrHomeTab(vsync: this, animations: _animations);
+        return DrHomeTab(
+          vsync: this, 
+          animations: _animations,
+          scaffoldKey: _scaffoldKey,
+        );
       case 2:
         return DrChatTab();
       default:
-        return DrHomeTab(vsync: this, animations: _animations);
+        return DrHomeTab(
+          vsync: this, 
+          animations: _animations,
+          scaffoldKey: _scaffoldKey,
+        );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     bool isDarkMode = Provider.of<ThemeProvider>(context).isDarkMode;
-    final user = Provider.of<UserProvider>(context).user;
     return Theme(
       data: isDarkMode ? AppTheme.darkTheme : AppTheme.lightTheme,
       child: _isLoading
