@@ -6,6 +6,8 @@ import 'package:health/controllers/user_provider.dart';
 import 'package:health/patient_views/splash_screen_views.dart';
 import 'package:health/patient_views/tabs/activity_tab.dart';
 import 'package:health/patient_views/tabs/appointment_tab.dart';
+import 'package:health/patient_views/tabs/bloodsugar_tab.dart';
+import 'package:health/patient_views/tabs/bmi_tab.dart';
 import 'package:health/patient_views/tabs/chat_tab.dart';
 import 'package:health/patient_views/tabs/home_tab.dart';
 import 'package:health/patient_views/tabs/profile_tab.dart';
@@ -42,7 +44,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     _animations.dispose();
     super.dispose();
   }
-// using provider to allow reactivity eliminates static code instead of calling user each tome
+
+  // using provider to allow reactivity eliminates static code instead of calling user each tome
   void getUserData() async {
     setState(() {
       _isLoading = true;
@@ -92,6 +95,17 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       case 'Logout':
         _logoutUser();
         break;
+      case 'BMI':
+        Navigator.push(context,
+          MaterialPageRoute(builder: (_) => BmiTab()));
+        break;
+      case 'Chat':
+        setState(() => _currentNavIndex = 3);
+        break;
+      case 'BloodSugar':
+        Navigator.push(context,
+          MaterialPageRoute(builder: (_) => BloodsugarTab()));
+        break;
       default:
         break;
     }
@@ -102,15 +116,19 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   Widget _getCurrentTab() {
     switch (_currentNavIndex) {
       case 0:
-        return AppointmentTab(scaffoldKey: _scaffoldKey,);
+        return AppointmentTab(scaffoldKey: _scaffoldKey);
       case 1:
         return ActivityTab(scaffoldKey: _scaffoldKey);
       case 2:
-        return  HomeTab(vsync: this, animations: _animations);
+        return HomeTab(vsync: this, animations: _animations);
       case 3:
-        return ChatTab(scaffoldKey: _scaffoldKey,);
+        return ChatTab(scaffoldKey: _scaffoldKey);
       case 4:
         return ProfileTab();
+      case 5:
+        return BloodsugarTab();
+      case 6:
+        return BmiTab();
       default:
         return HomeTab(vsync: this, animations: _animations);
     }
