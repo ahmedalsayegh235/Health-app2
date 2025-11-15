@@ -40,7 +40,7 @@ class HomeAnimations {
   }
 
   void _setupAnimations() {
-    scoreAnimation = Tween<double>(begin: 0.0, end: 0.85).animate(
+    scoreAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: scoreAnimationController,
         curve: Curves.easeOutCubic,

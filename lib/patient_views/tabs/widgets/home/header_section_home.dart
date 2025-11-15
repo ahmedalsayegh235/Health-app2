@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:health/components/custom_header_button.dart';
 import 'package:health/components/status_indicator.dart';
+import 'package:health/controllers/health_score_controller.dart';
 import 'package:health/helpers/theme_provider.dart';
 import 'package:health/patient_views/widgets/scorebar_widget.dart';
 import 'package:provider/provider.dart';
 import '../../../../helpers/app_theme.dart';
 import '../../../../controllers/animation/home_animation_controller.dart';
 import '../../../../controllers/user_provider.dart';
+
 
 class HeaderSection extends StatelessWidget {
   final HomeAnimations animations;
@@ -25,6 +27,7 @@ class HeaderSection extends StatelessWidget {
     }
 
     final user = Provider.of<UserProvider>(context).user;
+    final healthScore = Provider.of<HealthScoreProvider>(context);
 
     return SlideTransition(
       position: animations.headerSlideAnimation,
@@ -57,68 +60,54 @@ class HeaderSection extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Builder(
-                          builder: (context) => HeaderButton(
-                            icon: Icons.menu,
-                            onTap: () => Scaffold.of(context).openDrawer(),
-                            backgroundColor: Colors.white.withValues(alpha: .1),
-                            iconColor: Colors.white,
-                            iconSize: 20,
-                            padding: const EdgeInsets.all(8),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-
-                        const SizedBox(width: 8),
-
-                        StatusIndicator(),
-                        const SizedBox(width: 8),
-                        Text(
-                          user != null &&
-                                  user.name != null &&
-                                  user.name!.isNotEmpty
-                              ? 'Welcome back, ${user.name!.split(' ').first}'
-                              : 'Welcome back guest', // just incase firebase becomes dumb
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        HeaderButton(
-                          icon: isdarkMode
-                              ? Icons.light_mode_outlined
-                              : Icons.dark_mode_outlined,
-                          onTap: toggleTheme,
-                        ),
-                        Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            HeaderButton(
-                              icon: Icons.notifications_outlined,
-                              onTap: () {},
+                    // LEFT SIDE - FIXED: Wrap in Expanded to constrain the inner Row
+                    Expanded(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Builder(
+                            builder: (context) => HeaderButton(
+                              icon: Icons.menu,
+                              onTap: () => Scaffold.of(context).openDrawer(),
+                              backgroundColor: Colors.white.withOpacity(0.1),
+                              iconColor: Colors.white,
+                              iconSize: 20,
+                              padding: const EdgeInsets.all(8),
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            Positioned(
-                              right: -2,
-                              top: -2,
-                              child: Container(
-                                width: 8,
-                                height: 8,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFFFF1744),
-                                  shape: BoxShape.circle,
-                                ),
+                          ),
+
+                          const SizedBox(width: 8),
+
+                          StatusIndicator(),
+                          const SizedBox(width: 8),
+                          
+                          // FIXED: Use Flexible instead of Expanded in constrained Row
+                          Flexible(
+                            child: Text(
+                              user != null &&
+                                      user.name != null &&
+                                      user.name!.isNotEmpty
+                                  ? 'Welcome back, ${user.name!.split(' ').first}'
+                                  : 'Welcome back guest',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
                               ),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ],
-                        ),
-                      ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    // RIGHT SIDE - Theme button
+                    HeaderButton(
+                      icon: isdarkMode
+                          ? Icons.light_mode_outlined
+                          : Icons.dark_mode_outlined,
+                      onTap: toggleTheme,
                     ),
                   ],
                 ),
@@ -133,30 +122,58 @@ class HeaderSection extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Overall Health Score',
-                          style: TextStyle(fontSize: 12, color: Colors.white70),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            const Text(
-                              '100/100',
-                              style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Overall Health Score',
+                            style: TextStyle(fontSize: 12, color: Colors.white70),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Text(
+                                '${healthScore.healthScore}/100',
+                                style: const TextStyle(
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: ScoreBar(
+                                  animation: animations.scoreAnimation,
+                                  score: healthScore.healthScore,
+                                  color: healthScore.getHealthStatusColor(),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: healthScore.getHealthStatusColor().withOpacity(0.3),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              healthScore.getHealthStatus(),
+                              style: const TextStyle(
+                                fontSize: 11,
                                 color: Colors.white,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
-                            const SizedBox(width: 16),
-                            ScoreBar(animation: animations.scoreAnimation),
-                          ],
-                        ),
-                      ],
+                          ),
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: 16),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
@@ -171,12 +188,12 @@ class HeaderSection extends StatelessWidget {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha:0.2),
+                            color: Colors.white.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Text(
-                            '2 minutes ago',
-                            style: TextStyle(fontSize: 12, color: Colors.white),
+                          child: Text(
+                            healthScore.getTimeAgo(),
+                            style: const TextStyle(fontSize: 12, color: Colors.white),
                           ),
                         ),
                       ],

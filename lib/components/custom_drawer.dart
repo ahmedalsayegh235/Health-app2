@@ -74,6 +74,7 @@ class CustomDrawer extends StatelessWidget {
             child: ListView(
               padding: EdgeInsets.zero,
               children: [
+                _buildDrawerItem(context, Icons.home, 'Home'),
                 _buildDrawerItem(
                   context,
                   Icons.health_and_safety,

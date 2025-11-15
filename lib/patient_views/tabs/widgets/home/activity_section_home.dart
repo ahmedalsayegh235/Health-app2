@@ -38,15 +38,16 @@ class ActivitySection extends StatelessWidget {
             style: TextStyle(color: AppTheme.textColor(isDarkMode)),
           )
         else
-          ...activitiesToShow.map(
-            (activity) => ActivityItem(
+        ...activitiesToShow.map((activity) {
+            return ActivityItem(
               icon: getIconData(activity['icon']),
-              iconColor: Color(activity['iconColor']), // must be saved as int
+              iconColor: Color(activity['iconColor']),
               title: activity['title'],
               isDarkMode: isDarkMode,
               onTap: activity['onTap'],
-            ),
-          ),
+            );
+          }),
+
       ],
     );
   }

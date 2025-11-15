@@ -128,12 +128,6 @@ class ProfileContent extends StatelessWidget {
                         return null;
                       },
                     ),
-                    CustomTextFormField(
-                      controller: nameController,
-                      hintText: "Full Name",
-                      prefixIcon: Icons.person_outline,
-                      validator: (val) => val!.isEmpty ? "Enter your name" : null,
-                    ),
                     const SizedBox(height: 32),
                     Text(
                       'Account Information',

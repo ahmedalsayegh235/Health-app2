@@ -72,9 +72,9 @@ class CustomHealthGraph extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  'Last 24h',
+                  'All readings',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 9,
                     fontWeight: FontWeight.w600,
                     color: lineColor ?? AppTheme.lightgreen,
                   ),

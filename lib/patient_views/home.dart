@@ -95,16 +95,18 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       case 'Logout':
         _logoutUser();
         break;
+      case 'Home':
+        setState(() => _currentNavIndex = 2);
       case 'BMI':
-        Navigator.push(context,
-          MaterialPageRoute(builder: (_) => BmiTab()));
+        // Use index instead of navigation to keep drawer working
+        setState(() => _currentNavIndex = 6);
         break;
       case 'Chat':
         setState(() => _currentNavIndex = 3);
         break;
       case 'BloodSugar':
-        Navigator.push(context,
-          MaterialPageRoute(builder: (_) => BloodsugarTab()));
+        // Use index instead of navigation to keep drawer working
+        setState(() => _currentNavIndex = 5);
         break;
       default:
         break;
@@ -126,9 +128,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       case 4:
         return ProfileTab();
       case 5:
-        return BloodsugarTab();
+        return BloodsugarTab(scaffoldKey: _scaffoldKey,);
       case 6:
-        return BmiTab();
+        return BmiTab(scaffoldKey: _scaffoldKey);
       default:
         return HomeTab(vsync: this, animations: _animations);
     }
@@ -155,13 +157,18 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               // Lazy-loaded tab content
               body: _getCurrentTab(),
 
-              // Bottom navigation
-              bottomNavigationBar: BottomNav(
-                isDarkMode: isDarkMode,
-                currentIndex: _currentNavIndex,
-                onTap: (index) => setState(() => _currentNavIndex = index),
-                navAnimationController: _animations.navAnimationController,
-              ),
+              // Bottom navigation - hide for BMI and BloodSugar tabs
+              bottomNavigationBar:
+                  (_currentNavIndex == 5 || _currentNavIndex == 6)
+                  ? null
+                  : BottomNav(
+                      isDarkMode: isDarkMode,
+                      currentIndex: _currentNavIndex,
+                      onTap: (index) =>
+                          setState(() => _currentNavIndex = index),
+                      navAnimationController:
+                          _animations.navAnimationController,
+                    ),
             ),
     );
   }

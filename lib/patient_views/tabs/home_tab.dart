@@ -5,7 +5,7 @@ import 'package:health/patient_views/splash_screen_views.dart';
 import 'package:health/patient_views/tabs/widgets/home/header_section_home.dart';
 import 'package:health/patient_views/tabs/widgets/home/activity_section_home.dart';
 import 'package:health/patient_views/tabs/widgets/home/health_metric_section_home.dart';
-import 'package:health/patient_views/tabs/widgets/home/quick_action_section_home.dart';
+//import 'package:health/patient_views/tabs/widgets/home/quick_action_section_home.dart';
 import 'package:provider/provider.dart';
 import '../../helpers/theme_provider.dart';
 import '../../controllers/animation/home_animation_controller.dart';
@@ -26,12 +26,12 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
   Animation<double>? _headerAnimation;
   Animation<double>? _healthMetricsAnimation;
   Animation<double>? _activityAnimation;
-  Animation<double>? _quickActionsAnimation;
+  //Animation<double>? _quickActionsAnimation;
 
   Animation<Offset>? _headerSlideAnimation;
   Animation<Offset>? _healthMetricsSlideAnimation;
   Animation<Offset>? _activitySlideAnimation;
-  Animation<Offset>? _quickActionsSlideAnimation;
+  //Animation<Offset>? _quickActionsSlideAnimation;
 
   @override
   void initState() {
@@ -66,14 +66,14 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
         curve: const Interval(0.4, 0.7, curve: Curves.easeOutCubic),
       ),
     );
-
+/* 
     _quickActionsAnimation = Tween(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _staggerController,
         curve: const Interval(0.6, 1.0, curve: Curves.easeOutCubic),
       ),
     );
-
+*/
     // Slide Animations
     _headerSlideAnimation = Tween<Offset>(
       begin: const Offset(0.0, -0.3),
@@ -99,13 +99,13 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
       curve: const Interval(0.4, 0.7, curve: Curves.easeOutCubic),
     ));
 
-    _quickActionsSlideAnimation = Tween<Offset>(
+   /* _quickActionsSlideAnimation = Tween<Offset>(
       begin: const Offset(0.3, 0.0),
       end: Offset.zero,
     ).animate(CurvedAnimation(
       parent: _staggerController,
       curve: const Interval(0.6, 1.0, curve: Curves.easeOutCubic),
-    ));
+    ));*/ 
   }
 
   @override
@@ -190,7 +190,7 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
                   ),
                 const SizedBox(height: 40),
 
-                // Quick actions
+                /*
                 if (_quickActionsAnimation != null && _quickActionsSlideAnimation != null)
                   FadeTransition(
                     opacity: _quickActionsAnimation!,
@@ -207,7 +207,8 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
                       ),
                     ),
                   ),
-                const SizedBox(height: 120), // bottom spacing
+                const SizedBox(height: 120), 
+                // bottom spacing*/
               ],
             ),
           ),

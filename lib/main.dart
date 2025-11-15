@@ -2,7 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:health/controllers/BMI_controller.dart';
 import 'package:health/controllers/activities_provider.dart';
+import 'package:health/controllers/blood_sugar_controller.dart';
+import 'package:health/controllers/health_score_controller.dart';
 import 'package:health/dr_views/dr_home.dart';
 import 'package:health/firebase_options.dart';
 import 'package:health/controllers/sensor_provider.dart';
@@ -17,14 +20,28 @@ import 'helpers/theme_provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(create: (_) => UserProvider(),),
-        ChangeNotifierProvider(create: (_) => ActivityProvider()..loadActivities()), //for the stupid user
+        ChangeNotifierProvider(create: (_) => UserProvider()),
+        ChangeNotifierProvider(create: (_) => ActivityProvider()..loadActivities()),
         ChangeNotifierProvider(create: (_) => SensorProvider()),
+        ChangeNotifierProvider(create: (_) => BmiController()),
+        ChangeNotifierProvider(create: (_) => BloodSugarController()),
+        
+        // FIXED: Use ProxyProvider to get the actual instances from the tree
+        ChangeNotifierProxyProvider2<BmiController, SensorProvider, HealthScoreProvider>(
+          create: (context) => HealthScoreProvider(
+            bmiController: Provider.of<BmiController>(context, listen: false),
+            sensorProvider: Provider.of<SensorProvider>(context, listen: false),
+          ),
+          update: (context, bmi, sensor, previous) => 
+            previous ?? HealthScoreProvider(
+              bmiController: bmi,
+              sensorProvider: sensor,
+            ),
+        ),
       ],
       child: const MainApp(),
     ),
@@ -64,48 +81,38 @@ class AuthWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(
-      // Listen to authentication state changes
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          // Show a loading spinner while checking authentication state
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
 
-        // If user is not logged in → go to LoginPage
         if (!snapshot.hasData) {
           return const LoginPage();
         }
 
-        // If user is logged in → fetch user data from Firestore
         final user = snapshot.data!;
         return FutureBuilder<DocumentSnapshot>(
           future: FirebaseFirestore.instance
-              .collection(
-                'users',
-              ) // Make sure this matches your collection name
+              .collection('users')
               .doc(user.uid)
               .get(),
           builder: (context, userSnapshot) {
             if (userSnapshot.connectionState == ConnectionState.waiting) {
-              // Show a loading spinner while fetching user data
               return const Scaffold(body: SplashScreenViews());
             }
 
             if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
-              // Handle case where user document is missing
               return const Scaffold(
                 body: Center(child: Text("User data not found")),
               );
             }
 
-            // Get role from user document
             final userData = userSnapshot.data!.data() as Map<String, dynamic>;
             final role = userData['role'];
 
-            // Navigate to different home screens based on role
             if (role == 'doctor') {
               return const DrHomePage();
             } else {
