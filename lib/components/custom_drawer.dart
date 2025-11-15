@@ -74,22 +74,21 @@ class CustomDrawer extends StatelessWidget {
             child: ListView(
               padding: EdgeInsets.zero,
               children: [
+                _buildDrawerItem(context, Icons.home, 'Home'),
                 _buildDrawerItem(
                   context,
                   Icons.health_and_safety,
                   'Health Records',
                 ),
                 _buildDrawerItem(context, Icons.calendar_today, 'Appointments'),
-                _buildDrawerItem(context, Icons.medication, 'Medications'),
-                _buildDrawerItem(context, Icons.local_hospital, 'Emergency'),
-                _buildDrawerItem(context, Icons.settings, 'Settings'),
+                _buildDrawerItem(context, Icons.chat_bubble_outline, 'Chat'),
+                _buildDrawerItem(context, Icons.local_hospital, 'BMI'),
+                _buildDrawerItem(context, Icons.bloodtype, 'BloodSugar'),
                 Divider(
                   color: isDarkMode
                       ? const Color(0xFF1E1E1E)
                       : Colors.grey[300],
                 ),
-                _buildDrawerItem(context, Icons.help_outline, 'Help & Support'),
-                _buildDrawerItem(context, Icons.info_outline, 'About'),
                 _buildDrawerItem(context, Icons.logout, 'Logout'),
               ],
             ),

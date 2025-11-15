@@ -1,9 +1,11 @@
+import 'package:flutter/material.dart';
+
 class HealthReading {
   final String id;
   final DateTime timestamp;
   final double value;
   final String note;
-  final String type; // e.g., 'heart_rate', 'spo2', 'ecg', 'weight', 'bmi'
+  final String type; // e.g., 'heart_rate', 'spo2', 'ecg', 'weight', 'height', 'bmi'
   final Map<String, dynamic>? metadata;
 
   HealthReading({
@@ -37,6 +39,46 @@ class HealthReading {
       type: json['type'] as String? ?? 'general',
       metadata: json['metadata'] as Map<String, dynamic>?,
     );
+  }
+
+  /// Get weight value (for BMI calculation)
+  double? get weight {
+    if (type == 'weight') {
+      return value;
+    } else if (type == 'bmi' && metadata != null && metadata!['weight'] != null) {
+      return (metadata!['weight'] as num).toDouble();
+    }
+    return null;
+  }
+
+  /// Get height value (for BMI calculation)
+  double? get height {
+    if (type == 'height') {
+      return value;
+    } else if (type == 'bmi' && metadata != null && metadata!['height'] != null) {
+      return (metadata!['height'] as num).toDouble();
+    }
+    return null;
+  }
+
+  /// Get BMI category
+  String get bmiCategory {
+    if (type != 'bmi') return '';
+    
+    if (value < 18.5) return 'Underweight';
+    if (value < 25) return 'Normal';
+    if (value < 30) return 'Overweight';
+    return 'Obese';
+  }
+
+  /// Get BMI color based on category
+  Color get bmiColor {
+    if (type != 'bmi') return Colors.grey;
+    
+    if (value < 18.5) return Colors.blue;
+    if (value < 25) return Colors.green;
+    if (value < 30) return Colors.orange;
+    return Colors.red;
   }
 
   /// Get ECG samples from metadata

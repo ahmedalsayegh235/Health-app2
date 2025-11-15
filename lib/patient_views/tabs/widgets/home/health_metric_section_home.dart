@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:health/controllers/blood_sugar_controller.dart';
 import 'package:provider/provider.dart';
 import '../../../../helpers/app_theme.dart';
 import '../../../widgets/metric_card.dart';
 import '../../../../controllers/sensor_provider.dart';
 import '../../../../models/Reading.dart';
+import '../../../../controllers/BMI_controller.dart';
 
 class HealthMetricsSection extends StatelessWidget {
   final TickerProvider vsync;
@@ -115,27 +117,51 @@ class HealthMetricsSection extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
+            //bmi health 
+          Expanded(
+            child: StreamBuilder<List<HealthReading>>(
+              stream: Provider.of<BmiController>(context, listen: false).bmiStream(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return _buildLoadingCard(
+                    icon: Icons.monitor_weight_outlined,
+                    color: Colors.green,
+                    title: "BMI",
+                    unit: "kg/m²",
+                  );
+                }
 
-            //  Keep static Weight for now
-            //TODO: add in user class with constuctor
-            Expanded(
-              child: MetricCard(
-                icon: Icons.monitor_weight_outlined,
-                iconColor: Colors.green,
-                title: "Weight",
-                value: 70,
-                previousValue: 72,
-                unit: "kg",
-                isDarkMode: isDarkMode,
-                animationController: AnimationController(
-                  vsync: vsync,
-                  duration: const Duration(milliseconds: 150),
-                ),
-                onTap: () {},
-              ),
+                final readings = snapshot.data!;
+                final latest = readings.first.value;
+                final previous = readings.length > 1 ? readings[1].value : latest;
+
+                final category = BmiController.getBmiCategory(latest);
+                final color = BmiController.getBmiCategoryColor(latest);
+
+                return MetricCard(
+                  icon: Icons.monitor_weight_outlined,
+                  iconColor: color,
+                  title: "BMI",
+                  value: latest,
+                  previousValue: previous,
+                  unit: "kg/m²",
+                  isDarkMode: isDarkMode,
+                  animationController: AnimationController(
+                    vsync: vsync,
+                    duration: const Duration(milliseconds: 150),
+                  ),
+                  onTap: () {
+                    // Optional: show more BMI details or chart
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('BMI: ${latest.toStringAsFixed(1)} - $category')),
+                    );
+                  },
+                );
+              },
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
         const SizedBox(height: 12),
 
         Row(
@@ -184,22 +210,71 @@ class HealthMetricsSection extends StatelessWidget {
             ),
 
             const SizedBox(width: 12),
-            Expanded(
-              child: MetricCard(
-                icon: Icons.bloodtype,
-                iconColor: Colors.orange,
-                title: "Blood Sugar",
-                value: 110,
-                previousValue: 105,
-                unit: "mg/dL",
-                isDarkMode: isDarkMode,
-                animationController: AnimationController(
-                  vsync: vsync,
-                  duration: const Duration(milliseconds: 150),
-                ),
-                onTap: () {},
+Expanded(
+  child: StreamBuilder<List<HealthReading>>(
+    stream: Provider.of<BloodSugarController>(context, listen: false)
+        .bloodSugarStream(),
+    builder: (context, snapshot) {
+      if (!snapshot.hasData || snapshot.data!.isEmpty) {
+        return _buildLoadingCard(
+          icon: Icons.bloodtype,
+          color: Colors.orange,
+          title: "Blood Sugar",
+          unit: "mg/dL",
+        );
+      }
+
+      final readings = snapshot.data!;
+      final latestReading = readings.first;
+      final latest = latestReading.value;
+
+      final previous = readings.length > 1
+          ? readings[1].value
+          : latest;
+
+    final readingType =
+    (latestReading.metadata != null
+        ? latestReading.metadata!['readingType']
+        : null) ??
+    'random';
+
+
+      final category = BloodSugarController.getBloodSugarCategory(
+        latest,
+        readingType,
+      );
+
+      final color = BloodSugarController.getBloodSugarCategoryColor(
+        latest,
+        readingType,
+      );
+
+      return MetricCard(
+        icon: Icons.bloodtype,
+        iconColor: color,
+        title: "Blood Sugar",
+        value: latest,
+        previousValue: previous,
+        unit: "mg/dL",
+        isDarkMode: isDarkMode,
+        animationController: AnimationController(
+          vsync: vsync,
+          duration: const Duration(milliseconds: 150),
+        ),
+        onTap: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Blood Sugar: ${latest.toStringAsFixed(1)} mg/dL - $category ($readingType)',
               ),
             ),
+          );
+        },
+      );
+    },
+  ),
+),
+
             const SizedBox(width: 12),
             Expanded(
               child: MetricCard(

@@ -80,10 +80,6 @@ class ActivityHeader extends StatelessWidget {
                     icon: isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
                     onTap: toggleTheme,
                   ),
-                  HeaderButton(
-                    icon: Icons.notification_add_outlined,
-                    onTap: () {},
-                  ),
                 ],
               ),
 

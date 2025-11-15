@@ -30,69 +30,64 @@ String formatTime(DateTime dateTime) {
   }
 }
 
- Color getHeartStatusColor(double value) {
-    if (value < 60) return Colors.blue;
-    if (value > 100) return Colors.orange;
-    return AppTheme.lightgreen;
+Color getHeartStatusColor(double value) {
+  if (value < 60) return Colors.blue;
+  if (value > 100) return Colors.orange;
+  return AppTheme.lightgreen;
+}
+
+String getHeartStatusText(double value) {
+  if (value < 60) return 'LOW';
+  if (value > 100) return 'HIGH';
+  return 'NORMAL';
+}
+
+Color getSPo2StatusColor(double value) {
+  if (value < 90) return Colors.red;
+  if (value < 95) return Colors.orange;
+  return AppTheme.lightgreen;
+}
+
+String getSPo2StatusText(double value) {
+  if (value < 90) return 'LOW';
+  if (value < 95) return 'FAIR';
+  return 'NORMAL';
+}
+
+Color getQualityColor(double quality) {
+  if (quality >= 0.8) return Colors.green;
+  if (quality >= 0.6) return Colors.orange;
+  return Colors.red;
+}
+
+String getRhythmShort(String rhythm) {
+  switch (rhythm.toLowerCase()) {
+    case 'normal sinus rhythm':
+      return 'Normal';
+    case 'bradycardia':
+      return 'Slow';
+    case 'tachycardia':
+      return 'Fast';
+    default:
+      return rhythm.length > 10 ? '${rhythm.substring(0, 10)}...' : rhythm;
   }
-
-  String getHeartStatusText(double value) {
-    if (value < 60) return 'LOW';
-    if (value > 100) return 'HIGH';
-    return 'NORMAL';
-  }
-
-  Color getSPo2StatusColor(double value) {
-    if (value < 90) return Colors.red;
-    if (value < 95) return Colors.orange;
-    return AppTheme.lightgreen;
-  }
-
-  String getSPo2StatusText(double value) {
-    if (value < 90) return 'LOW';
-    if (value < 95) return 'FAIR';
-    return 'NORMAL';
-  }
-
-
- Color getQualityColor(double quality) {
-    if (quality >= 0.8) return Colors.green;
-    if (quality >= 0.6) return Colors.orange;
-    return Colors.red;
-  }
-
-  String getRhythmShort(String rhythm) {
-    switch (rhythm.toLowerCase()) {
-      case 'normal sinus rhythm':
-        return 'Normal';
-      case 'bradycardia':
-        return 'Slow';
-      case 'tachycardia':
-        return 'Fast';
-      default:
-        return rhythm.length > 10 ? '${rhythm.substring(0, 10)}...' : rhythm;
-    }
-  }
-
+}
 
 // helper function
 IconData getIconData(String iconName) {
-  switch (iconName) {
+  print(iconName);
+  switch (iconName.trim().toLowerCase()) {
     case 'heart':
       return Icons.favorite;
     case 'spo2':
       return Icons.air;
     case 'ecg':
       return Icons.favorite_border;
-    case 'home':
-      return Icons.home;
-    // add more as needed
+    case 'scale':
+      return Icons.monitor_weight_rounded;
+    case 'bloodtype':
+      return Icons.bloodtype;
     default:
       return Icons.help; // fallback
   }
 }
-
-
-
-
-  
