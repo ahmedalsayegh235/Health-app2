@@ -117,11 +117,16 @@ class ActivityHeader extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: StatsWidget(
-                      icon: Icons.show_chart,
-                      value: 'Normal',
-                      label: 'ECG',
-                      color: const Color(0xFF45B7D1),
+                    child: Consumer<SensorProvider>(
+                      builder: (context, sensorProvider, child) {
+                        final currentEcgBpm = sensorProvider.realtimeBPM.toInt();
+                        return StatsWidget(
+                          icon: Icons.monitor_heart,
+                          value: currentEcgBpm > 0 ? currentEcgBpm.toString() : '--',
+                          label: 'ECG',
+                          color: const Color(0xFF45B7D1),
+                        );
+                      },
                     ),
                   ),
                 ],
