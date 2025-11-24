@@ -49,6 +49,7 @@ class SensorProvider with ChangeNotifier {
   final List<double> _hrBuffer = [];
   final List<int> _spo2Buffer = [];
   final List<double> _ecgRecordingBuffer = [];
+  final List<double> _ecgBpmBuffer = [];
   
   // ECG Analysis
   final List<double> _rRIntervals = [];
@@ -139,8 +140,13 @@ class SensorProvider with ChangeNotifier {
       
       if (calculatedBPM is num) {
         _realtimeBPM = calculatedBPM.toDouble();
+
+        // Collect BPM values during ECG recording
+        if (_isEcgRecording && calculatedBPM > 0) {
+          _ecgBpmBuffer.add(calculatedBPM.toDouble());
+        }
       }
-      
+
       if (ecg != null) {
         _processEcgData(ecg);
       }
@@ -340,6 +346,7 @@ class SensorProvider with ChangeNotifier {
   void _startEcgRecording() {
     _isEcgRecording = true;
     _ecgRecordingBuffer.clear();
+    _ecgBpmBuffer.clear();
     _qrsCount = 0;
     _signalQuality = 1.0;
     _rRIntervals.clear();
@@ -374,10 +381,13 @@ class SensorProvider with ChangeNotifier {
       return;
     }
 
-    final calculatedHR = _calculateHeartRateFromEcg();
+    // Calculate average BPM from collected real-time values
+    final calculatedHR = _ecgBpmBuffer.isNotEmpty
+        ? _ecgBpmBuffer.reduce((a, b) => a + b) / _ecgBpmBuffer.length
+        : 0.0;
     final rhythm = _classifyRhythm();
 
-    print('ECG Analysis - HR: $calculatedHR, Rhythm: $rhythm, QRS: $_qrsCount');
+    print('ECG Analysis - HR: $calculatedHR (from ${_ecgBpmBuffer.length} BPM samples), Rhythm: $rhythm');
 
     final reading = HealthReading(
       timestamp: DateTime.now(),
