@@ -25,6 +25,7 @@ class _HeartRateTabState extends State<HeartRateTab>
   bool _showAllReadings = false;
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
+  Stream<List<HealthReading>>? _heartRateStream;
 
   @override
   void initState() {
@@ -38,6 +39,13 @@ class _HeartRateTabState extends State<HeartRateTab>
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Initialize stream once and cache it
+    _heartRateStream ??= context.read<SensorProvider>().heartRateStream();
   }
 
   @override
@@ -122,15 +130,9 @@ Future<void> _stopRecording() async {
     final userId = sensorProvider.userId;
 
     return StreamBuilder<List<HealthReading>>(
-      stream: sensorProvider.heartRateStream(),
+      stream: _heartRateStream,
       builder: (context, snapshot) {
-        // for testing the syream builder
-        print("StreamBuilder state: ${snapshot.connectionState}");
-        print("Has data: ${snapshot.hasData}");
-        print("Data length: ${snapshot.data?.length ?? 0}");
-
         if (snapshot.hasError) {
-          print("StreamBuilder error: ${snapshot.error}");
           return Center(
             child: Text(
               'Error loading readings: ${snapshot.error}',

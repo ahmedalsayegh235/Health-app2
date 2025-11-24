@@ -25,6 +25,7 @@ class _SpO2TabState extends State<SpO2Tab> with SingleTickerProviderStateMixin {
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
   late Animation<Color?> _colorAnimation;
+  Stream<List<HealthReading>>? _spo2Stream;
 
   @override
   void initState() {
@@ -43,6 +44,13 @@ class _SpO2TabState extends State<SpO2Tab> with SingleTickerProviderStateMixin {
         .animate(
           CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
         );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Initialize stream once and cache it
+    _spo2Stream ??= context.read<SensorProvider>().spo2Stream();
   }
 
   @override
@@ -127,14 +135,9 @@ class _SpO2TabState extends State<SpO2Tab> with SingleTickerProviderStateMixin {
     final userId = sensorProvider.userId;
 
     return StreamBuilder<List<HealthReading>>(
-      stream: sensorProvider.spo2Stream(),
+      stream: _spo2Stream,
       builder: (context, snapshot) {
-        print("SpO2 StreamBuilder state: ${snapshot.connectionState}");
-        print("SpO2 Has data: ${snapshot.hasData}");
-        print("SpO2 Data length: ${snapshot.data?.length ?? 0}");
-
         if (snapshot.hasError) {
-          print("SpO2 StreamBuilder error: ${snapshot.error}");
           return Center(
             child: Text(
               'Error loading SpO2 readings: ${snapshot.error}',

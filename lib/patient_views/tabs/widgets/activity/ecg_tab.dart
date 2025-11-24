@@ -23,6 +23,7 @@ class _ECGTabState extends State<ECGTab> with TickerProviderStateMixin {
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
   late AnimationController _heartbeatController;
+  Stream<List<HealthReading>>? _ecgReadingsStream;
 
   @override
   void initState() {
@@ -41,6 +42,13 @@ class _ECGTabState extends State<ECGTab> with TickerProviderStateMixin {
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Initialize stream once and cache it
+    _ecgReadingsStream ??= Provider.of<SensorProvider>(context, listen: false).ecgStream();
   }
 
   @override
@@ -788,9 +796,10 @@ class _ECGTabState extends State<ECGTab> with TickerProviderStateMixin {
               const SizedBox(height: 12),
 
               StreamBuilder<List<HealthReading>>(
-                stream: Provider.of<SensorProvider>(context, listen: false).ecgStream(),
+                stream: _ecgReadingsStream,
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
+                  // Show loading only on initial load
+                  if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
                     return Center(
                       child: Padding(
                         padding: const EdgeInsets.all(24.0),
