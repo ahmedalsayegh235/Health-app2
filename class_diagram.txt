@@ -1,469 +1,712 @@
-@startuml Health-app2 Class Diagram
+/*
+ * ESP32 Health Monitoring System - Optimized for Flutter Integration
+ *
+ * Key Features:
+ * - Dual mode: HR/SpO2 monitoring and ECG recording
+ * - MQTT communication with Flutter app
+ * - Reduced ECG transmission rate for smooth display
+ * - Proper Firebase integration support
+ * - Power management with sleep modes
+ *
+ * Hardware:
+ * - ESP32 DevKit
+ * - MAX30100 Pulse Oximeter
+ * - AD8232 ECG Module
+ * - SSD1306 OLED Display (128x64)
+ *
+ * Connections:
+ * - I2C (SDA=21, SCL=22): MAX30100, OLED
+ * - ADC (GPIO34): ECG signal input
+ * - Button (GPIO0): Mode switch
+ * - LED (GPIO2): Mode indicator
+ */
 
-' ========== SKINPARAMS ==========
-skinparam classAttributeIconSize 0
-skinparam classFontStyle bold
-skinparam packageStyle rectangle
+#include <Wire.h>
+#include <U8g2lib.h>
+#include "MAX30100_PulseOximeter.h"
+#include <WiFi.h>
+#include <PubSubClient.h>
+#include <ArduinoJson.h>
 
-' ========== ENUMS ==========
-package "Enums" {
-    enum DeviceType {
-        smartwatch
-        bloodPressure
-        scale
-        pulseOximeter
-        ecg
-    }
+// ==================== PIN DEFINITIONS ====================
+#define SDA_PIN       21
+#define SCL_PIN       22
+#define ECG_PIN       34
+#define BUTTON_PIN     0
+#define LED_MODE       2
 
-    enum ConnectionStatus {
-        connected
-        disconnected
-        connecting
-    }
+// ==================== DISPLAY & SENSOR ====================
+U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
+PulseOximeter pox;
+
+// ==================== NETWORK ====================
+const char* STA_SSID   = "Mena_F560";
+const char* STA_PASS   = "mena4glte";
+const char* MQTT_HOST  = "broker.hivemq.com";
+const int   MQTT_PORT  = 1883;
+const char* MQTT_TOPIC = "esp32/health";
+
+WiFiClient   wifiClient;
+PubSubClient mqttClient(wifiClient);
+
+// ==================== GLOBAL STATE ====================
+volatile float gHeartRate       = 0.0f;
+volatile float gSpO2            = 0.0f;
+volatile bool  gFingerDetected  = false;
+volatile uint32_t gLastBeatTime = 0;
+volatile bool  gValidBeat       = false;
+
+volatile uint8_t gMode = 0;  // 0=HR/SpO2, 1=ECG
+
+// ECG Buffer - Optimized size for 250Hz sampling
+static const int ECG_BUF_SIZE = 125;  // Reduced from 100 to 125 (0.5 seconds at 250Hz)
+volatile uint16_t gEcgBuf[ECG_BUF_SIZE] = {0};
+volatile int gEcgIdx = 0;
+
+// ECG Transmission - Optimized for smooth display
+volatile uint32_t gLastEcgPublish = 0;
+const uint32_t ECG_PUBLISH_INTERVAL = 500;  // Increased from 200ms to 500ms to reduce lag
+
+// ECG Analysis
+static uint32_t lastPeakTime = 0;
+static float avgRR = 0;
+static int beatCount = 0;
+static String ecgStatus = "Analyzing...";
+
+// Button & Power Management
+volatile uint32_t gLastButtonMs = 0;
+volatile bool gButtonPressed = false;
+volatile uint32_t gLastActivityTime = 0;
+volatile uint8_t gPowerMode = 0;
+volatile bool gShowStartupMessage = false;
+volatile uint32_t gStartupMessageStart = 0;
+const uint32_t STARTUP_MESSAGE_DURATION = 3000;
+
+// Sensor Validation
+volatile uint32_t gLastValidReading = 0;
+volatile uint32_t gSensorNoiseCount = 0;
+volatile bool gSensorInitialized = false;
+
+// MQTT & Time
+volatile bool gMqttConnected = false;
+volatile uint32_t gLastMqttAttempt = 0;
+unsigned long gBootTime = 0;
+bool gWiFiInitialized = false;
+
+// Task Handles
+TaskHandle_t sensorTaskHandle = NULL;
+TaskHandle_t oledTaskHandle = NULL;
+TaskHandle_t mqttTaskHandle = NULL;
+
+// ==================== HELPER FUNCTIONS ====================
+void markActivity(const char* source) {
+  gLastActivityTime = millis();
 }
 
-' ========== MODELS ==========
-package "Models" {
-    class UserModel {
-        - id: String?
-        - role: String?
-        - name: String?
-        - email: String?
-        - cpr: String?
-        - gender: String?
-        + {static} userData: UserModel
-        --
-        + fromFirestore(DocumentSnapshot): UserModel
-        + toMap(): Map<String, dynamic>
-        + getUserData(String userId): Future<UserModel?>
-    }
-
-    class SensorData {
-        - heartRate: double
-        - spo2: int
-        - timestamp: int
-        --
-        + fromJson(Map<String, dynamic>): SensorData
-        + toJson(): Map<String, dynamic>
-    }
-
-    class HealthReading {
-        - id: String
-        - timestamp: DateTime
-        - value: double
-        - note: String
-        - type: String
-        - metadata: Map<String, dynamic>?
-        --
-        + fromJson(Map<String, dynamic>): HealthReading
-        + toJson(): Map<String, dynamic>
-        + copyWith(...): HealthReading
-        + weight: double?
-        + height: double?
-        + bmiCategory: String
-        + bmiColor: Color
-        + ecgSamples: List<double>
-        + sampleRate: double
-        + duration: double
-        + calculatedHeartRate: double?
-        + qrsCount: int
-        + signalQuality: double
-        + rhythmClassification: String
-    }
-
-    class ChatModel {
-        - id: String?
-        - members: List<String>?
-        - isAccept: bool?
-        - createdAt: DateTime?
-        --
-        + fromFirestore(DocumentSnapshot): ChatModel
-        + toMap(): Map<String, dynamic>
-    }
-
-    class MessageModel {
-        - id: String?
-        - text: String?
-        - sendBy: String?
-        - timestamp: DateTime?
-        --
-        + fromFirestore(DocumentSnapshot): MessageModel
-        + toMap(): Map<String, dynamic>
-    }
-
-    class DeviceModel {
-        - id: String
-        - name: String
-        - type: DeviceType
-        - status: ConnectionStatus
-        - batteryLevel: int
-        - lastSync: DateTime
-        - features: List<String>
-    }
-
-    class UserActivity {
-        - title: String
-        - time: String
-        - icon: String
-        - iconColor: int
-        --
-        + toJson(): Map<String, dynamic>
-        + fromJson(Map<String, dynamic>): UserActivity
-    }
+void showStartupMessage() {
+  gShowStartupMessage = true;
+  gStartupMessageStart = millis();
+  Serial.println("✓ Showing startup message");
 }
 
-' ========== PROVIDERS / CONTROLLERS ==========
-package "Providers" {
-    abstract class ChangeNotifier {
-        + notifyListeners(): void
-        + addListener(): void
-        + removeListener(): void
-    }
-
-    class UserProvider {
-        - _user: UserModel?
-        --
-        + user: UserModel?
-        + setUser(UserModel user): void
-    }
-
-    class ThemeProvider {
-        - _isDarkMode: bool
-        --
-        + isDarkMode: bool
-        + toggleTheme(): void
-        + setDarkMode(bool value): void
-    }
-
-    class SensorProvider {
-        - client: MqttServerClient
-        - _latest: SensorData
-        - _realTimeEcgBuffer: List<double>
-        - _currentMode: String
-        - _lastHeartRate: HealthReading?
-        - _lastSpo2: HealthReading?
-        - _lastEcgReading: HealthReading?
-        - _hrBuffer: List<double>
-        - _spo2Buffer: List<int>
-        - _ecgRecordingBuffer: List<double>
-        - _rRIntervals: List<double>
-        - _qrsCount: int
-        - _signalQuality: double
-        - _recordingStartTime: DateTime?
-        - _realtimeBPM: double
-        - _realtimeRhythm: String
-        - _isEcgRecording: bool
-        --
-        + latest: SensorData
-        + realTimeEcgData: List<double>
-        + currentMode: String
-        + isEcgMode: bool
-        + lastHeartRate: HealthReading?
-        + lastSpo2: HealthReading?
-        + lastEcgReading: HealthReading?
-        + userId: String?
-        + realtimeBPM: double
-        + realtimeRhythm: String
-        + isEcgRecording: bool
-        + ecgRecordingProgress: double
-        - _connect(): Future<void>
-        - _processSensorData(Map<String, dynamic>): void
-        - _processEcgData(dynamic): void
-        - _analyzeEcgSamples(List<double>): void
-        + onConnected(): void
-        + onDisconnected(): void
-        + startCollection(String type): void
-        + stopEcgRecording(): void
-        - _saveToFirebase(HealthReading): Future<void>
-        + heartRateStream(): Stream<List<HealthReading>>
-        + spo2Stream(): Stream<List<HealthReading>>
-        + ecgStream(): Stream<List<HealthReading>>
-        + dispose(): void
-    }
-
-    class DeviceController {
-        - _devices: List<DeviceModel>
-        --
-        + devices: List<DeviceModel>
-        + initDevices(): void
-        + connectDevice(BuildContext, DeviceModel): void
-        + disconnectDevice(BuildContext, DeviceModel): void
-        + syncDevice(BuildContext, DeviceModel): void
-        + syncAllDevices(BuildContext): void
-        + scanDevices(BuildContext): void
-        + connectedCount: int
-        + totalCount: int
-    }
-
-    class ActivityProvider {
-        - _activities: List<Map<String, dynamic>>
-        - _lastSavedDate: DateTime?
-        --
-        + activities: List<Map<String, dynamic>>
-        + loadActivities(): Future<void>
-        + addActivity(Map<String, dynamic>): Future<void>
-        - _saveActivities(): Future<void>
-    }
-
-    class BmiController {
-        - _firestore: FirebaseFirestore
-        - _auth: FirebaseAuth
-        - _bmiReadings: List<HealthReading>
-        - _latestBmi: HealthReading?
-        - _isLoading: bool
-        - _error: String?
-        --
-        + bmiReadings: List<HealthReading>
-        + latestBmi: HealthReading?
-        + isLoading: bool
-        + error: String?
-        + userId: String?
-        + {static} calculateBmi(double, double): double
-        + {static} getBmiCategory(double): String
-        + {static} getBmiCategoryColor(double): Color
-        + {static} getBmiAdvice(double): String
-        + addBmiReading(double, double, String?): Future<bool>
-        + bmiStream(): Stream<List<HealthReading>>
-        + deleteReading(String): Future<bool>
-    }
-
-    class BloodSugarController {
-        - _firestore: FirebaseFirestore
-        - _auth: FirebaseAuth
-        - _bloodSugarReadings: List<HealthReading>
-        - _latestBloodSugar: HealthReading?
-        - _isLoading: bool
-        - _error: String?
-        --
-        + bloodSugarReadings: List<HealthReading>
-        + latestBloodSugar: HealthReading?
-        + isLoading: bool
-        + error: String?
-        + userId: String?
-        + {static} getBloodSugarCategory(double, String): String
-        + {static} getBloodSugarCategoryColor(double, String): Color
-        + {static} getBloodSugarAdvice(double, String): String
-        + addBloodSugarReading(double, String, String?): Future<bool>
-        + bloodSugarStream(): Stream<List<HealthReading>>
-        + deleteReading(String): Future<bool>
-    }
-
-    class HealthScoreProvider {
-        - bmiController: BmiController
-        - sensorProvider: SensorProvider
-        - _healthScore: int
-        - _lastUpdated: DateTime?
-        - _componentScores: Map<String, int>
-        --
-        + healthScore: int
-        + lastUpdated: DateTime?
-        + componentScores: Map<String, int>
-        - _onDataChanged(): void
-        - _calculateHealthScore(): void
-        - _calculateBmiScore(): int
-        - _calculateHeartRateScore(): int
-        - _calculateSpo2Score(): int
-        + getHealthStatus(): String
-        + getHealthStatusColor(): Color
-        + getTimeAgo(): String
-        + dispose(): void
-    }
-
-    class AppointmentController {
-        - _firestore: FirebaseFirestore
-        - _isLoading: bool
-        - _error: String?
-        --
-        + isLoading: bool
-        + error: String?
-        + appointmentsStream: Stream<QuerySnapshot>
-        + filterAvailableAppointments(List<DocumentSnapshot>): List<DocumentSnapshot>
-        + filterUserAppointments(List<DocumentSnapshot>, String): List<DocumentSnapshot>
-        + getDoctorInfo(String): Future<Map<String, dynamic>?>
-        + requestAppointment(String, String, String): Future<bool>
-        + cancelAppointment(String, String): Future<bool>
-        + showConfirmationDialog(...): Future<bool>
-    }
+void onBeatDetected() {
+  if (gFingerDetected && gHeartRate > 30 && gSpO2 > 70) {
+    gLastBeatTime = millis();
+    gValidBeat = true;
+    markActivity("beat");
+  }
 }
 
-' ========== CONTROLLERS (Non-ChangeNotifier) ==========
-package "Controllers" {
-    class AuthController {
-        - _auth: FirebaseAuth
-        - _firestore: FirebaseFirestore
-        --
-        + signIn(String, String): Future<User?>
-        + signUp(String, String, String, String, String, String, String): Future<User?>
-        + signOut(): Future<void>
-        + updateUser(String, String?, String?, String?): Future<String>
-    }
-
-    class ChatLogic {
-        - _firestore: FirebaseFirestore
-        --
-        + getDoctorsStream(): Stream<QuerySnapshot>
-        + getChatStream(String): Stream<QuerySnapshot>
-        + filterChatsForDoctor(List, String): List
-        + sendChatRequest(BuildContext, String, String): Future<void>
-        + getAcceptedChatsStream(String): Stream<QuerySnapshot>
-        + getPendingRequestsStream(String): Stream<QuerySnapshot>
-        + acceptChatRequest(BuildContext, String, String): Future<void>
-        + getOtherUserId(List<String>, String): String
-        + checkExistingChat(String, String): Future<QuerySnapshot>
-        + getChatStatistics(String): Future<Map<String, int>>
-        + deleteChat(BuildContext, String): Future<void>
-        + getUnreadMessageCount(String, String): Future<int>
-        + markMessagesAsRead(String, String): Future<void>
-    }
-
-    class AppointmentsController {
-        - doctorId: String
-        --
-        + createAppointment(Map<String, dynamic>): Future<void>
-        + acceptAppointment(String): Future<void>
-        + rejectAppointment(String): Future<void>
-        + cancelAppointment(String): Future<void>
-        + deleteAppointment(String): Future<void>
-        + cleanupPastAppointments(): Future<void>
-        + calculateStats(List<DocumentSnapshot>): Map<String, int>
-        + getAppointmentsByStatus(String): Stream<QuerySnapshot>
-    }
+void IRAM_ATTR buttonISR() {
+  uint32_t now = millis();
+  if (now - gLastButtonMs > 300) {
+    gButtonPressed = true;
+    gLastButtonMs = now;
+    markActivity("button");
+  }
 }
 
-' ========== ANIMATION CONTROLLERS ==========
-package "Animations" {
-    class AuthAnimationController {
-        - formController: AnimationController
-        - slideController: AnimationController
-        - backgroundController: AnimationController
-        - exitController: AnimationController
-        - formFade: Animation<double>
-        - slide: Animation<double>
-        - background: Animation<double>
-        - exitSlide: Animation<double>
-        - vsync: TickerProvider
-        --
-        - _setupAnimations(): void
-        + startAnimations(): void
-        + dispose(): void
-    }
+// ==================== MQTT FUNCTIONS ====================
+void ensureMqttConnected() {
+  if (mqttClient.connected()) {
+    gMqttConnected = true;
+    return;
+  }
 
-    class HomeAnimations {
-        - navAnimationController: AnimationController
-        - scoreAnimationController: AnimationController
-        - buttonAnimationController: AnimationController
-        - headerSlideController: AnimationController
-        - scoreAnimation: Animation<double>
-        - headerSlideAnimation: Animation<Offset>
-        - fadeAnimation: Animation<double>
-        - vsync: TickerProvider
-        --
-        - _setupControllers(): void
-        - _setupAnimations(): void
-        + start(): void
-        + dispose(): void
-    }
+  uint32_t now = millis();
+  if (now - gLastMqttAttempt < 5000) return;
 
-    class AppointmentAnimations {
-        - headerSlideController: AnimationController
-        - listAnimationController: AnimationController
-        - tabAnimationController: AnimationController
-        - headerSlideAnimation: Animation<Offset>
-        - fadeAnimation: Animation<double>
-        - listFadeAnimation: Animation<double>
-        - listSlideAnimation: Animation<Offset>
-        - vsync: TickerProvider
-        --
-        - _setupControllers(): void
-        - _setupAnimations(): void
-        + start(): void
-        + reset(): void
-        + dispose(): void
-    }
+  gLastMqttAttempt = now;
+  String cid = String("ESP32Health-") + String((uint32_t)esp_random(), HEX);
 
-    class DrAppointmentAnimations {
-        - headerSlideController: AnimationController
-        - listAnimationController: AnimationController
-        - fabAnimationController: AnimationController
-        - headerSlideAnimation: Animation<Offset>
-        - fadeAnimation: Animation<double>
-        - listFadeAnimation: Animation<double>
-        - listSlideAnimation: Animation<Offset>
-        - fabScaleAnimation: Animation<double>
-        - fabRotationAnimation: Animation<double>
-        - vsync: TickerProvider
-        --
-        - _setupControllers(): void
-        - _setupAnimations(): void
-        + start(): void
-        + reset(): void
-        + dispose(): void
-    }
+  Serial.printf("Connecting MQTT as %s...\n", cid.c_str());
+
+  if (mqttClient.connect(cid.c_str())) {
+    Serial.println("✓ MQTT Connected");
+    gMqttConnected = true;
+
+    DynamicJsonDocument doc(256);
+    doc["device"] = "ESP32-Health";
+    doc["status"] = "connected";
+    doc["ip"] = WiFi.localIP().toString();
+    String payload;
+    serializeJson(doc, payload);
+    mqttClient.publish("esp32/health/status", payload.c_str());
+  } else {
+    Serial.printf("✗ MQTT failed, state=%d\n", mqttClient.state());
+    gMqttConnected = false;
+  }
 }
 
-' ========== HELPER / THEME ==========
-package "Helpers" {
-    class AppTheme <<static>> {
-        + {static} darkgreen: Color
-        + {static} lightgreen: Color
-        + {static} darkTheme: ThemeData
-        + {static} lightTheme: ThemeData
-        + {static} successColor: Color
-        + {static} warningColor: Color
-        + {static} errorColor: Color
-        + {static} infoColor: Color
-        --
-        + {static} backgroundColor(bool): Color
-        + {static} cardColor(bool): Color
-        + {static} textColor(bool): Color
-        + {static} textSecondaryColor(bool): Color
-        + {static} headerGradient(bool): List<Color>
-        + {static} cardGradient(bool): List<Color>
-        + {static} dividerColor(bool): Color
-        + {static} shadowColor(bool): Color
-        + {static} primaryButtonStyle(bool): ButtonStyle
-        + {static} secondaryButtonStyle(bool): ButtonStyle
+void publishSensorData() {
+  if (!gMqttConnected) return;
+
+  DynamicJsonDocument doc(3072);  // Increased size for ECG data
+  doc["device"] = "ESP32-Health";
+  doc["timestamp"] = millis();
+
+  if (gMode == 0) {
+    // HR/SpO2 Mode
+    doc["mode"] = "hr_spo2";
+    doc["heartRate"] = gFingerDetected ? gHeartRate : 0;
+    doc["spo2"] = gFingerDetected ? gSpO2 : 0;
+    doc["fingerDetected"] = gFingerDetected;
+    doc["validBeat"] = gValidBeat;
+
+  } else {
+    // ECG Mode - Send buffered data
+    doc["mode"] = "ecg";
+
+    JsonArray ecgArray = doc.createNestedArray("ecg");
+    int currentIdx = gEcgIdx;
+
+    // Send all samples in buffer
+    for (int i = 0; i < ECG_BUF_SIZE; i++) {
+      int pos = (currentIdx + i) % ECG_BUF_SIZE;
+      ecgArray.add((int)gEcgBuf[pos]);
     }
+
+    doc["status"] = ecgStatus;
+    doc["sampleRate"] = 250;
+    doc["beatCount"] = beatCount;
+
+    if (avgRR > 0) {
+      doc["calculatedBPM"] = (int)avgRR;
+    }
+  }
+
+  String payload;
+  serializeJson(doc, payload);
+
+  if (mqttClient.publish(MQTT_TOPIC, payload.c_str(), false)) {
+    // Success - no need to log every publish
+  } else {
+    gMqttConnected = false;
+    Serial.println("✗ MQTT publish failed");
+  }
 }
 
-' ========== RELATIONSHIPS ==========
+// ==================== WIFI FUNCTIONS ====================
+void connectWiFi() {
+  if (WiFi.status() == WL_CONNECTED) return;
 
-' Inheritance
-UserProvider --|> ChangeNotifier
-ThemeProvider --|> ChangeNotifier
-SensorProvider --|> ChangeNotifier
-DeviceController --|> ChangeNotifier
-ActivityProvider --|> ChangeNotifier
-BmiController --|> ChangeNotifier
-BloodSugarController --|> ChangeNotifier
-HealthScoreProvider --|> ChangeNotifier
-AppointmentController --|> ChangeNotifier
+  if (gWiFiInitialized) {
+    Serial.println("Reconnecting WiFi...");
+    WiFi.reconnect();
+    uint32_t start = millis();
+    while (WiFi.status() != WL_CONNECTED && millis() - start < 10000) {
+      delay(500);
+      Serial.print(".");
+    }
+    if (WiFi.status() == WL_CONNECTED) {
+      Serial.println("\n✓ WiFi Reconnected");
+    }
+    return;
+  }
 
-' Composition / Dependencies
-DeviceModel --> DeviceType : uses
-DeviceModel --> ConnectionStatus : uses
+  Serial.println("Initializing WiFi...");
+  WiFi.mode(WIFI_STA);
+  WiFi.setAutoReconnect(true);
+  WiFi.begin(STA_SSID, STA_PASS);
 
-SensorProvider --> SensorData : uses
-SensorProvider --> HealthReading : manages
-SensorProvider --> UserModel : references
+  uint32_t start = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - start < 15000) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println();
 
-BmiController --> HealthReading : manages
-BloodSugarController --> HealthReading : manages
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("✓ WiFi Connected");
+    Serial.print("IP: ");
+    Serial.println(WiFi.localIP());
+    gWiFiInitialized = true;
+  } else {
+    Serial.println("✗ WiFi Failed");
+  }
+}
 
-HealthScoreProvider --> BmiController : depends on
-HealthScoreProvider --> SensorProvider : depends on
+// ==================== POWER MANAGEMENT ====================
+void enterLightSleep() {
+  Serial.println("Entering light sleep...");
+  esp_sleep_enable_gpio_wakeup();
+  gpio_wakeup_enable((gpio_num_t)BUTTON_PIN, GPIO_INTR_LOW_LEVEL);
+  esp_sleep_enable_timer_wakeup(10000000);
+  esp_light_sleep_start();
+  Serial.println("Woke from light sleep");
+}
 
-UserProvider --> UserModel : contains
+void resumeAllTasks() {
+  if (sensorTaskHandle && eTaskGetState(sensorTaskHandle) == eSuspended) {
+    vTaskResume(sensorTaskHandle);
+  }
+  if (oledTaskHandle && eTaskGetState(oledTaskHandle) == eSuspended) {
+    vTaskResume(oledTaskHandle);
+  }
+  if (mqttTaskHandle && eTaskGetState(mqttTaskHandle) == eSuspended) {
+    vTaskResume(mqttTaskHandle);
+  }
+}
 
-ChatLogic --> ChatModel : works with
-ChatLogic --> MessageModel : works with
-ChatLogic --> UserModel : references
+void suspendNonCriticalTasks() {
+  if (sensorTaskHandle && gMode == 0 && eTaskGetState(sensorTaskHandle) != eSuspended) {
+    vTaskSuspend(sensorTaskHandle);
+  }
+  if (oledTaskHandle && eTaskGetState(oledTaskHandle) != eSuspended) {
+    vTaskSuspend(oledTaskHandle);
+  }
+}
 
-DeviceController --> DeviceModel : manages
+// ==================== FREERTOS TASKS ====================
 
-AuthController --> UserModel : creates
+// Sensor Task - Handles MAX30100 and ECG sampling
+void taskSensor(void* parameter) {
+  uint32_t lastDebugPrint = 0;
+  float lastValidHR = 0;
+  float lastValidSpO2 = 0;
 
-' Aggregation
-ChatModel o-- MessageModel : contains
+  const uint32_t ECG_SAMPLE_INTERVAL_US = 4000;  // 250Hz = 4ms per sample
+  uint32_t lastEcgSampleTime = 0;
 
-@enduml
+  for (;;) {
+    if (gMode == 0) {
+      // ===== PULSE OXIMETER MODE =====
+      pox.update();
+      float hr = pox.getHeartRate();
+      float sp = pox.getSpO2();
+
+      uint32_t now = millis();
+
+      // Debug print every 5 seconds
+      if (now - lastDebugPrint > 5000) {
+        Serial.printf("[Sensor] HR=%.1f, SpO2=%.1f\n", hr, sp);
+        lastDebugPrint = now;
+      }
+
+      bool rawFingerDetected = (hr > 0 && sp > 0);
+
+      // Validate readings
+      if (rawFingerDetected) {
+        if (hr < 30 || hr > 220 || sp < 70 || sp > 100) {
+          rawFingerDetected = false;
+          gSensorNoiseCount++;
+        }
+        if (abs(hr - lastValidHR) > 50 && lastValidHR > 0) {
+          rawFingerDetected = false;
+        }
+      }
+
+      if (rawFingerDetected && gSensorNoiseCount < 10) {
+        if (!gFingerDetected) {
+          gFingerDetected = true;
+          Serial.println("✓ Finger ON");
+        }
+
+        if (hr > 30 && hr < 220) {
+          gHeartRate = hr;
+          lastValidHR = hr;
+        }
+        if (sp > 70 && sp <= 100) {
+          gSpO2 = sp;
+          lastValidSpO2 = sp;
+        }
+
+        gLastValidReading = now;
+        gSensorNoiseCount = max(0, (int)gSensorNoiseCount - 1);
+
+      } else {
+        if (now - gLastValidReading > 3000) {
+          if (gFingerDetected) {
+            gFingerDetected = false;
+            gValidBeat = false;
+            Serial.println("✗ Finger OFF");
+          }
+          if (now - gLastValidReading > 5000) {
+            gHeartRate = 0;
+            gSpO2 = 0;
+            lastValidHR = 0;
+            lastValidSpO2 = 0;
+          }
+        }
+      }
+
+      vTaskDelay(pdMS_TO_TICKS(50));
+
+    } else {
+      // ===== ECG MODE =====
+      uint32_t currentMicros = micros();
+
+      if (currentMicros - lastEcgSampleTime >= ECG_SAMPLE_INTERVAL_US) {
+        lastEcgSampleTime = currentMicros;
+
+        uint16_t raw = analogRead(ECG_PIN);
+        gEcgBuf[gEcgIdx] = raw;
+        gEcgIdx = (gEcgIdx + 1) % ECG_BUF_SIZE;
+
+        // R-peak detection (simple threshold-based)
+        if (raw > 2500) {
+          uint32_t now = millis();
+          if (now - lastPeakTime > 300) {  // Min 200 BPM
+            uint32_t rr = now - lastPeakTime;
+            lastPeakTime = now;
+
+            float bpm = 60000.0f / rr;
+
+            if (bpm >= 40 && bpm <= 180) {
+              avgRR = (avgRR * 0.8f) + (bpm * 0.2f);
+              beatCount++;
+
+              if (beatCount > 5) {
+                if (avgRR >= 60 && avgRR <= 100) {
+                  ecgStatus = "Normal Sinus Rhythm";
+                } else if (avgRR < 60) {
+                  ecgStatus = "Bradycardia";
+                } else if (avgRR > 100) {
+                  ecgStatus = "Tachycardia";
+                }
+              }
+            }
+          }
+        }
+      }
+
+      vTaskDelay(pdMS_TO_TICKS(1));
+    }
+  }
+}
+
+// OLED Task - Display management
+void taskOLED(void* parameter) {
+  for (;;) {
+    u8g2.clearBuffer();
+
+    // Startup Message
+    if (gShowStartupMessage) {
+      uint32_t elapsed = millis() - gStartupMessageStart;
+      if (elapsed < STARTUP_MESSAGE_DURATION) {
+        u8g2.setFont(u8g2_font_ncenB10_tr);
+        const char* lines[] = {"Health", "Monitoring", "System"};
+        int y = 20;
+        for (int i = 0; i < 3; i++) {
+          int w = u8g2.getStrWidth(lines[i]);
+          u8g2.setCursor((128 - w) / 2, y);
+          u8g2.print(lines[i]);
+          y += 15;
+        }
+        u8g2.sendBuffer();
+        vTaskDelay(pdMS_TO_TICKS(100));
+        continue;
+      } else {
+        gShowStartupMessage = false;
+      }
+    }
+
+    if (gMode == 0) {
+      // ===== HR/SPO2 DISPLAY =====
+      unsigned long elapsed = (millis() - gBootTime) / 1000;
+      int hours = elapsed / 3600;
+      int minutes = (elapsed % 3600) / 60;
+      int seconds = elapsed % 60;
+
+      // Header
+      u8g2.drawBox(0, 0, 128, 11);
+      u8g2.setColorIndex(0);
+      u8g2.setFont(u8g2_font_6x10_tr);
+      u8g2.setCursor(2, 9);
+      u8g2.print("VITALS");
+
+      char timeStr[10];
+      sprintf(timeStr, "%02d:%02d:%02d", hours, minutes, seconds);
+      int timeWidth = u8g2.getStrWidth(timeStr);
+      u8g2.setCursor(128 - timeWidth - 2, 9);
+      u8g2.print(timeStr);
+      u8g2.setColorIndex(1);
+
+      if (gFingerDetected) {
+        // Heart Rate
+        u8g2.setFont(u8g2_font_logisoso20_tn);
+        char hrStr[5];
+        sprintf(hrStr, "%d", (int)gHeartRate);
+        u8g2.setCursor(10, 35);
+        u8g2.print(hrStr);
+
+        u8g2.setFont(u8g2_font_6x10_tr);
+        u8g2.setCursor(10 + u8g2.getStrWidth(hrStr) + 3, 35);
+        u8g2.print("bpm");
+
+        u8g2.setFont(u8g2_font_5x7_tr);
+        u8g2.setCursor(10, 42);
+        u8g2.print("Heart Rate");
+
+        u8g2.drawLine(0, 46, 128, 46);
+
+        // SpO2
+        u8g2.setFont(u8g2_font_logisoso16_tn);
+        char spo2Str[5];
+        sprintf(spo2Str, "%d", (int)gSpO2);
+        u8g2.setCursor(12, 62);
+        u8g2.print(spo2Str);
+
+        u8g2.setFont(u8g2_font_6x10_tr);
+        u8g2.setCursor(12 + u8g2.getStrWidth(spo2Str) + 2, 62);
+        u8g2.print("% SpO2");
+
+        // Animated heart
+        if (gValidBeat && (millis() - gLastBeatTime < 300)) {
+          u8g2.drawBox(110, 52, 8, 8);
+          u8g2.drawBox(118, 52, 8, 8);
+          u8g2.drawBox(106, 56, 24, 6);
+          u8g2.drawTriangle(106, 62, 130, 62, 118, 64);
+        }
+
+      } else {
+        // No finger
+        u8g2.setFont(u8g2_font_ncenB08_tr);
+        const char* msg1 = "Place finger";
+        const char* msg2 = "on sensor";
+        u8g2.setCursor((128 - u8g2.getStrWidth(msg1)) / 2, 30);
+        u8g2.print(msg1);
+        u8g2.setCursor((128 - u8g2.getStrWidth(msg2)) / 2, 45);
+        u8g2.print(msg2);
+
+        u8g2.drawFrame(54, 50, 20, 12);
+        u8g2.drawBox(58, 52, 12, 8);
+      }
+
+      // Status bar
+      u8g2.setFont(u8g2_font_5x7_tr);
+      u8g2.setCursor(2, 64);
+      u8g2.print(WiFi.status() == WL_CONNECTED ? "WiFi" : "----");
+      u8g2.setCursor(30, 64);
+      u8g2.print("|");
+      u8g2.setCursor(35, 64);
+      u8g2.print(gMqttConnected ? "MQTT" : "----");
+
+    } else {
+      // ===== ECG DISPLAY =====
+      u8g2.setFont(u8g2_font_6x10_tr);
+      u8g2.setCursor(2, 8);
+      u8g2.print("ECG MONITOR");
+
+      if (avgRR > 0 && beatCount > 5) {
+        u8g2.setFont(u8g2_font_ncenB08_tr);
+        u8g2.setCursor(80, 8);
+        u8g2.print((int)avgRR);
+        u8g2.print(" bpm");
+      }
+
+      // ECG Waveform
+      const int graphHeight = 35;
+      const int graphY = 12;
+      u8g2.drawFrame(0, graphY, 128, graphHeight);
+
+      for (int i = 1; i < min(ECG_BUF_SIZE, 127); i++) {
+        int i0 = (gEcgIdx + i - 1) % ECG_BUF_SIZE;
+        int i1 = (gEcgIdx + i) % ECG_BUF_SIZE;
+        int y0 = graphY + graphHeight - 1 - map(gEcgBuf[i0], 0, 4095, 1, graphHeight - 2);
+        int y1 = graphY + graphHeight - 1 - map(gEcgBuf[i1], 0, 4095, 1, graphHeight - 2);
+        u8g2.drawLine(i - 1, y0, i, y1);
+      }
+
+      // Status
+      u8g2.setFont(u8g2_font_5x7_tr);
+      u8g2.setCursor(2, 56);
+      u8g2.print(ecgStatus.substring(0, 20));
+
+      u8g2.setCursor(2, 64);
+      u8g2.print("Beats: ");
+      u8g2.print(beatCount);
+    }
+
+    u8g2.sendBuffer();
+
+    if (gValidBeat && (millis() - gLastBeatTime > 500)) {
+      gValidBeat = false;
+    }
+
+    vTaskDelay(pdMS_TO_TICKS(gMode == 0 ? 50 : 30));
+  }
+}
+
+// MQTT Task - Network communication
+void taskMQTT(void* parameter) {
+  uint32_t lastHrSpO2Publish = 0;
+  const uint32_t HR_SPO2_PUBLISH_INTERVAL = 2000;
+
+  for (;;) {
+    connectWiFi();
+
+    if (WiFi.status() == WL_CONNECTED) {
+      if (!mqttClient.connected()) {
+        ensureMqttConnected();
+      }
+      if (mqttClient.connected()) {
+        mqttClient.loop();
+      }
+    }
+
+    uint32_t now = millis();
+
+    if (gMode == 0) {
+      if (now - lastHrSpO2Publish >= HR_SPO2_PUBLISH_INTERVAL) {
+        publishSensorData();
+        lastHrSpO2Publish = now;
+      }
+    } else {
+      if (now - gLastEcgPublish >= ECG_PUBLISH_INTERVAL) {
+        publishSensorData();
+        gLastEcgPublish = now;
+      }
+    }
+
+    vTaskDelay(pdMS_TO_TICKS(100));
+  }
+}
+
+// Button Task - Mode switching
+void taskButton(void* parameter) {
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(BUTTON_PIN), buttonISR, FALLING);
+
+  for (;;) {
+    if (gButtonPressed) {
+      gButtonPressed = false;
+
+      uint8_t oldMode = gMode;
+      gMode = (gMode == 0) ? 1 : 0;
+      digitalWrite(LED_MODE, (gMode == 1) ? HIGH : LOW);
+
+      Serial.println("\n================================");
+      Serial.printf("MODE: %s → %s\n",
+        (oldMode == 0) ? "HR/SpO2" : "ECG",
+        (gMode == 0) ? "HR/SpO2" : "ECG");
+      Serial.println("================================\n");
+
+      if (gMode == 1) {
+        // Switching to ECG
+        for (int i = 0; i < ECG_BUF_SIZE; i++) gEcgBuf[i] = 0;
+        gEcgIdx = 0;
+        ecgStatus = "Analyzing...";
+        beatCount = 0;
+        avgRR = 0;
+        lastPeakTime = 0;
+        Serial.println("✓ ECG mode activated");
+
+      } else {
+        // Switching to HR/SpO2
+        gFingerDetected = false;
+        gValidBeat = false;
+        gHeartRate = 0;
+        gSpO2 = 0;
+
+        Serial.println("Reinitializing MAX30100...");
+        if (pox.begin()) {
+          pox.setOnBeatDetectedCallback(onBeatDetected);
+          pox.setIRLedCurrent(MAX30100_LED_CURR_50MA);
+          Serial.println("✓ MAX30100 reinitialized");
+        }
+      }
+    }
+    vTaskDelay(pdMS_TO_TICKS(50));
+  }
+}
+
+// Power Manager Task
+void taskPowerManager(void* parameter) {
+  const uint32_t LS_THRESHOLD = 30000;
+
+  for (;;) {
+    uint32_t inactive = millis() - gLastActivityTime;
+
+    if (gMode == 0 && !gFingerDetected && inactive > LS_THRESHOLD) {
+      Serial.println("Entering power save mode...");
+      u8g2.setPowerSave(1);
+      suspendNonCriticalTasks();
+      enterLightSleep();
+      u8g2.setPowerSave(0);
+      resumeAllTasks();
+      markActivity("wake");
+    }
+
+    vTaskDelay(pdMS_TO_TICKS(5000));
+  }
+}
+
+// ==================== SETUP & LOOP ====================
+void setup() {
+  Serial.begin(115200);
+  delay(500);
+
+  Serial.println("\n================================");
+  Serial.println("  ESP32 Health Monitor v2.0");
+  Serial.println("================================\n");
+
+  Wire.begin(SDA_PIN, SCL_PIN);
+  Wire.setClock(400000);
+  Serial.println("✓ I2C initialized");
+
+  u8g2.begin();
+  Serial.println("✓ OLED initialized");
+
+  pinMode(LED_MODE, OUTPUT);
+  digitalWrite(LED_MODE, LOW);
+
+  Serial.println("Initializing MAX30100...");
+  if (!pox.begin()) {
+    Serial.println("✗ MAX30100 FAILED");
+  } else {
+    Serial.println("✓ MAX30100 OK");
+    pox.setOnBeatDetectedCallback(onBeatDetected);
+    pox.setIRLedCurrent(MAX30100_LED_CURR_50MA);
+    gSensorInitialized = true;
+  }
+
+  connectWiFi();
+
+  if (WiFi.status() == WL_CONNECTED) {
+    mqttClient.setServer(MQTT_HOST, MQTT_PORT);
+    mqttClient.setBufferSize(3072);
+    Serial.println("✓ MQTT configured");
+  }
+
+  gBootTime = millis();
+  markActivity("boot");
+
+  Serial.println("\nCreating FreeRTOS tasks...");
+  xTaskCreate(taskSensor, "Sensor", 4096, NULL, 3, &sensorTaskHandle);
+  xTaskCreate(taskOLED,   "OLED",   4096, NULL, 2, &oledTaskHandle);
+  xTaskCreate(taskMQTT,   "MQTT",   4096, NULL, 1, &mqttTaskHandle);
+  xTaskCreate(taskButton, "Button", 2048, NULL, 4, NULL);
+  xTaskCreate(taskPowerManager, "Power", 3072, NULL, 1, NULL);
+  Serial.println("✓ All tasks created");
+
+  showStartupMessage();
+
+  Serial.println("\n✓ Setup complete");
+  Serial.println("================================");
+  Serial.println("Press BOOT button to switch modes\n");
+}
+
+void loop() {
+  vTaskDelete(NULL);
+}

@@ -662,10 +662,10 @@ class _ECGTabState extends State<ECGTab> with TickerProviderStateMixin {
 
               const SizedBox(height: 24),
 
-              // Latest Reading Metrics
-              if (currentReading != null || (isEcgMode && realtimeBPM > 0)) ...[
+              // Latest Reading Metrics (from last recording, not real-time)
+              if (currentReading != null) ...[
                 Text(
-                  'Current Metrics',
+                  'Latest Recording',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -678,9 +678,7 @@ class _ECGTabState extends State<ECGTab> with TickerProviderStateMixin {
                     Expanded(
                       child: ECGInfoCard(
                         title: 'Heart Rate',
-                        value: currentReading != null
-                            ? '${currentReading.value.toInt()} BPM'
-                            : '${realtimeBPM.toInt()} BPM',
+                        value: '${currentReading.value.toInt()} BPM',
                         icon: Icons.favorite,
                         color: Colors.red,
                         isDark: widget.isDark,
@@ -690,9 +688,7 @@ class _ECGTabState extends State<ECGTab> with TickerProviderStateMixin {
                     Expanded(
                       child: ECGInfoCard(
                         title: 'Rhythm',
-                        value: currentReading != null
-                            ? _getRhythmShort(_getRhythmFromReading(currentReading))
-                            : _getRhythmShort(realtimeRhythm),
+                        value: _getRhythmShort(_getRhythmFromReading(currentReading)),
                         icon: Icons.graphic_eq,
                         color: Colors.green,
                         isDark: widget.isDark,
@@ -700,32 +696,30 @@ class _ECGTabState extends State<ECGTab> with TickerProviderStateMixin {
                     ),
                   ],
                 ),
-                if (currentReading != null) ...[
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ECGInfoCard(
-                          title: 'QRS Count',
-                          value: '${_getQrsCountFromReading(currentReading)}',
-                          icon: Icons.show_chart,
-                          color: Colors.blue,
-                          isDark: widget.isDark,
-                        ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ECGInfoCard(
+                        title: 'QRS Count',
+                        value: '${_getQrsCountFromReading(currentReading)}',
+                        icon: Icons.show_chart,
+                        color: Colors.blue,
+                        isDark: widget.isDark,
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ECGInfoCard(
-                          title: 'Quality',
-                          value: '${((currentReading.metadata?['signalQuality'] ?? 0) * 100).toInt()}%',
-                          icon: Icons.signal_cellular_alt,
-                          color: Colors.purple,
-                          isDark: widget.isDark,
-                        ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ECGInfoCard(
+                        title: 'Quality',
+                        value: '${((currentReading.metadata?['signalQuality'] ?? 0) * 100).toInt()}%',
+                        icon: Icons.signal_cellular_alt,
+                        color: Colors.purple,
+                        isDark: widget.isDark,
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 24),
               ],
 
