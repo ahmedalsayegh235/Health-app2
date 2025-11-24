@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:health/helpers/tab_helper.dart';
 import 'package:health/patient_views/tabs/widgets/activity/widgets/ecg/previous_reading_ecg.dart';
 import 'package:health/patient_views/tabs/widgets/activity/widgets/ecg/realtime_ecg.dart';
-import 'package:health/patient_views/tabs/widgets/activity/widgets/reading_diaglog.dart';
 import 'package:provider/provider.dart';
 import 'package:health/components/custom_button.dart';
 import 'package:health/helpers/app_theme.dart';
@@ -122,12 +121,213 @@ class _ECGTabState extends State<ECGTab> with TickerProviderStateMixin {
   void _showReadingDetail(HealthReading reading) {
     showDialog(
       context: context,
-      builder: (context) => ReadingDetailDialog(
-        title: 'ECG Reading',
-        reading: reading,
-        isDark: widget.isDark,
-        unit: 'bpm',
-        color: Colors.green,
+      barrierDismissible: true,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(16),
+        child: Container(
+          constraints: const BoxConstraints(maxHeight: 700),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: AppTheme.cardGradient(widget.isDark),
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.green.withValues(alpha: 0.2),
+                      Colors.green.withValues(alpha: 0.1),
+                    ],
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.monitor_heart,
+                        color: Colors.green,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'ECG Recording',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.textColor(widget.isDark),
+                            ),
+                          ),
+                          Text(
+                            formatTime(reading.timestamp),
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: AppTheme.textSecondaryColor(widget.isDark),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: Icon(
+                        Icons.close,
+                        color: AppTheme.textSecondaryColor(widget.isDark),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Content
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // ECG Chart
+                      if (reading.ecgSamples.isNotEmpty) ...[
+                        DetailedECGChart(
+                          ecgReading: reading,
+                          isDark: widget.isDark,
+                        ),
+                        const SizedBox(height: 20),
+                      ] else ...[
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.warning, color: Colors.orange),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'ECG waveform data not available for this recording.',
+                                  style: TextStyle(
+                                    color: AppTheme.textColor(widget.isDark),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+                      // Metrics
+                      Text(
+                        'Analysis Results',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.textColor(widget.isDark),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildMetricRow('Heart Rate', '${reading.value.toInt()} BPM'),
+                      _buildMetricRow('Rhythm', reading.rhythmClassification),
+                      _buildMetricRow('QRS Count', '${reading.qrsCount}'),
+                      _buildMetricRow('Signal Quality', '${(reading.signalQuality * 100).toInt()}%'),
+                      _buildMetricRow('Duration', '${reading.duration.toStringAsFixed(1)}s'),
+                      if (reading.note.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        Text(
+                          'Notes',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.textColor(widget.isDark),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          reading.note,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppTheme.textSecondaryColor(widget.isDark),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              // Actions
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    minimumSize: const Size(double.infinity, 48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Close',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMetricRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              color: AppTheme.textSecondaryColor(widget.isDark),
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textColor(widget.isDark),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -648,6 +848,7 @@ class _ECGTabState extends State<ECGTab> with TickerProviderStateMixin {
                   return Column(
                     children: [
                       ...displayReadings.map((reading) => Padding(
+                            key: ValueKey(reading.id),
                             padding: const EdgeInsets.only(bottom: 12),
                             child: EcgReadingCard(
                               reading: reading,

@@ -282,11 +282,11 @@ class _DetailedECGChartState extends State<DetailedECGChart> {
   @override
   Widget build(BuildContext context) {
     final samples = widget.ecgReading.ecgSamples;
-    if (samples.isEmpty) {
+    final totalDuration = widget.ecgReading.duration;
+
+    if (samples.isEmpty || totalDuration <= 0) {
       return _buildNoDataIndicator();
     }
-
-    final totalDuration = widget.ecgReading.duration;
 
     return Column(
       children: [

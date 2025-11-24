@@ -365,6 +365,9 @@ class SensorProvider with ChangeNotifier {
         'rrIntervals': _rRIntervals.length,
         'recordingDuration': RECORDING_DURATION,
         'sampleRate': ECG_SAMPLE_RATE,
+        'samples': _ecgRecordingBuffer,
+        'duration': _ecgRecordingBuffer.length / ECG_SAMPLE_RATE,
+        'heartRate': calculatedHR,
       },
     );
 
