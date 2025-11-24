@@ -1,0 +1,469 @@
+@startuml Health-app2 Class Diagram
+
+' ========== SKINPARAMS ==========
+skinparam classAttributeIconSize 0
+skinparam classFontStyle bold
+skinparam packageStyle rectangle
+
+' ========== ENUMS ==========
+package "Enums" {
+    enum DeviceType {
+        smartwatch
+        bloodPressure
+        scale
+        pulseOximeter
+        ecg
+    }
+
+    enum ConnectionStatus {
+        connected
+        disconnected
+        connecting
+    }
+}
+
+' ========== MODELS ==========
+package "Models" {
+    class UserModel {
+        - id: String?
+        - role: String?
+        - name: String?
+        - email: String?
+        - cpr: String?
+        - gender: String?
+        + {static} userData: UserModel
+        --
+        + fromFirestore(DocumentSnapshot): UserModel
+        + toMap(): Map<String, dynamic>
+        + getUserData(String userId): Future<UserModel?>
+    }
+
+    class SensorData {
+        - heartRate: double
+        - spo2: int
+        - timestamp: int
+        --
+        + fromJson(Map<String, dynamic>): SensorData
+        + toJson(): Map<String, dynamic>
+    }
+
+    class HealthReading {
+        - id: String
+        - timestamp: DateTime
+        - value: double
+        - note: String
+        - type: String
+        - metadata: Map<String, dynamic>?
+        --
+        + fromJson(Map<String, dynamic>): HealthReading
+        + toJson(): Map<String, dynamic>
+        + copyWith(...): HealthReading
+        + weight: double?
+        + height: double?
+        + bmiCategory: String
+        + bmiColor: Color
+        + ecgSamples: List<double>
+        + sampleRate: double
+        + duration: double
+        + calculatedHeartRate: double?
+        + qrsCount: int
+        + signalQuality: double
+        + rhythmClassification: String
+    }
+
+    class ChatModel {
+        - id: String?
+        - members: List<String>?
+        - isAccept: bool?
+        - createdAt: DateTime?
+        --
+        + fromFirestore(DocumentSnapshot): ChatModel
+        + toMap(): Map<String, dynamic>
+    }
+
+    class MessageModel {
+        - id: String?
+        - text: String?
+        - sendBy: String?
+        - timestamp: DateTime?
+        --
+        + fromFirestore(DocumentSnapshot): MessageModel
+        + toMap(): Map<String, dynamic>
+    }
+
+    class DeviceModel {
+        - id: String
+        - name: String
+        - type: DeviceType
+        - status: ConnectionStatus
+        - batteryLevel: int
+        - lastSync: DateTime
+        - features: List<String>
+    }
+
+    class UserActivity {
+        - title: String
+        - time: String
+        - icon: String
+        - iconColor: int
+        --
+        + toJson(): Map<String, dynamic>
+        + fromJson(Map<String, dynamic>): UserActivity
+    }
+}
+
+' ========== PROVIDERS / CONTROLLERS ==========
+package "Providers" {
+    abstract class ChangeNotifier {
+        + notifyListeners(): void
+        + addListener(): void
+        + removeListener(): void
+    }
+
+    class UserProvider {
+        - _user: UserModel?
+        --
+        + user: UserModel?
+        + setUser(UserModel user): void
+    }
+
+    class ThemeProvider {
+        - _isDarkMode: bool
+        --
+        + isDarkMode: bool
+        + toggleTheme(): void
+        + setDarkMode(bool value): void
+    }
+
+    class SensorProvider {
+        - client: MqttServerClient
+        - _latest: SensorData
+        - _realTimeEcgBuffer: List<double>
+        - _currentMode: String
+        - _lastHeartRate: HealthReading?
+        - _lastSpo2: HealthReading?
+        - _lastEcgReading: HealthReading?
+        - _hrBuffer: List<double>
+        - _spo2Buffer: List<int>
+        - _ecgRecordingBuffer: List<double>
+        - _rRIntervals: List<double>
+        - _qrsCount: int
+        - _signalQuality: double
+        - _recordingStartTime: DateTime?
+        - _realtimeBPM: double
+        - _realtimeRhythm: String
+        - _isEcgRecording: bool
+        --
+        + latest: SensorData
+        + realTimeEcgData: List<double>
+        + currentMode: String
+        + isEcgMode: bool
+        + lastHeartRate: HealthReading?
+        + lastSpo2: HealthReading?
+        + lastEcgReading: HealthReading?
+        + userId: String?
+        + realtimeBPM: double
+        + realtimeRhythm: String
+        + isEcgRecording: bool
+        + ecgRecordingProgress: double
+        - _connect(): Future<void>
+        - _processSensorData(Map<String, dynamic>): void
+        - _processEcgData(dynamic): void
+        - _analyzeEcgSamples(List<double>): void
+        + onConnected(): void
+        + onDisconnected(): void
+        + startCollection(String type): void
+        + stopEcgRecording(): void
+        - _saveToFirebase(HealthReading): Future<void>
+        + heartRateStream(): Stream<List<HealthReading>>
+        + spo2Stream(): Stream<List<HealthReading>>
+        + ecgStream(): Stream<List<HealthReading>>
+        + dispose(): void
+    }
+
+    class DeviceController {
+        - _devices: List<DeviceModel>
+        --
+        + devices: List<DeviceModel>
+        + initDevices(): void
+        + connectDevice(BuildContext, DeviceModel): void
+        + disconnectDevice(BuildContext, DeviceModel): void
+        + syncDevice(BuildContext, DeviceModel): void
+        + syncAllDevices(BuildContext): void
+        + scanDevices(BuildContext): void
+        + connectedCount: int
+        + totalCount: int
+    }
+
+    class ActivityProvider {
+        - _activities: List<Map<String, dynamic>>
+        - _lastSavedDate: DateTime?
+        --
+        + activities: List<Map<String, dynamic>>
+        + loadActivities(): Future<void>
+        + addActivity(Map<String, dynamic>): Future<void>
+        - _saveActivities(): Future<void>
+    }
+
+    class BmiController {
+        - _firestore: FirebaseFirestore
+        - _auth: FirebaseAuth
+        - _bmiReadings: List<HealthReading>
+        - _latestBmi: HealthReading?
+        - _isLoading: bool
+        - _error: String?
+        --
+        + bmiReadings: List<HealthReading>
+        + latestBmi: HealthReading?
+        + isLoading: bool
+        + error: String?
+        + userId: String?
+        + {static} calculateBmi(double, double): double
+        + {static} getBmiCategory(double): String
+        + {static} getBmiCategoryColor(double): Color
+        + {static} getBmiAdvice(double): String
+        + addBmiReading(double, double, String?): Future<bool>
+        + bmiStream(): Stream<List<HealthReading>>
+        + deleteReading(String): Future<bool>
+    }
+
+    class BloodSugarController {
+        - _firestore: FirebaseFirestore
+        - _auth: FirebaseAuth
+        - _bloodSugarReadings: List<HealthReading>
+        - _latestBloodSugar: HealthReading?
+        - _isLoading: bool
+        - _error: String?
+        --
+        + bloodSugarReadings: List<HealthReading>
+        + latestBloodSugar: HealthReading?
+        + isLoading: bool
+        + error: String?
+        + userId: String?
+        + {static} getBloodSugarCategory(double, String): String
+        + {static} getBloodSugarCategoryColor(double, String): Color
+        + {static} getBloodSugarAdvice(double, String): String
+        + addBloodSugarReading(double, String, String?): Future<bool>
+        + bloodSugarStream(): Stream<List<HealthReading>>
+        + deleteReading(String): Future<bool>
+    }
+
+    class HealthScoreProvider {
+        - bmiController: BmiController
+        - sensorProvider: SensorProvider
+        - _healthScore: int
+        - _lastUpdated: DateTime?
+        - _componentScores: Map<String, int>
+        --
+        + healthScore: int
+        + lastUpdated: DateTime?
+        + componentScores: Map<String, int>
+        - _onDataChanged(): void
+        - _calculateHealthScore(): void
+        - _calculateBmiScore(): int
+        - _calculateHeartRateScore(): int
+        - _calculateSpo2Score(): int
+        + getHealthStatus(): String
+        + getHealthStatusColor(): Color
+        + getTimeAgo(): String
+        + dispose(): void
+    }
+
+    class AppointmentController {
+        - _firestore: FirebaseFirestore
+        - _isLoading: bool
+        - _error: String?
+        --
+        + isLoading: bool
+        + error: String?
+        + appointmentsStream: Stream<QuerySnapshot>
+        + filterAvailableAppointments(List<DocumentSnapshot>): List<DocumentSnapshot>
+        + filterUserAppointments(List<DocumentSnapshot>, String): List<DocumentSnapshot>
+        + getDoctorInfo(String): Future<Map<String, dynamic>?>
+        + requestAppointment(String, String, String): Future<bool>
+        + cancelAppointment(String, String): Future<bool>
+        + showConfirmationDialog(...): Future<bool>
+    }
+}
+
+' ========== CONTROLLERS (Non-ChangeNotifier) ==========
+package "Controllers" {
+    class AuthController {
+        - _auth: FirebaseAuth
+        - _firestore: FirebaseFirestore
+        --
+        + signIn(String, String): Future<User?>
+        + signUp(String, String, String, String, String, String, String): Future<User?>
+        + signOut(): Future<void>
+        + updateUser(String, String?, String?, String?): Future<String>
+    }
+
+    class ChatLogic {
+        - _firestore: FirebaseFirestore
+        --
+        + getDoctorsStream(): Stream<QuerySnapshot>
+        + getChatStream(String): Stream<QuerySnapshot>
+        + filterChatsForDoctor(List, String): List
+        + sendChatRequest(BuildContext, String, String): Future<void>
+        + getAcceptedChatsStream(String): Stream<QuerySnapshot>
+        + getPendingRequestsStream(String): Stream<QuerySnapshot>
+        + acceptChatRequest(BuildContext, String, String): Future<void>
+        + getOtherUserId(List<String>, String): String
+        + checkExistingChat(String, String): Future<QuerySnapshot>
+        + getChatStatistics(String): Future<Map<String, int>>
+        + deleteChat(BuildContext, String): Future<void>
+        + getUnreadMessageCount(String, String): Future<int>
+        + markMessagesAsRead(String, String): Future<void>
+    }
+
+    class AppointmentsController {
+        - doctorId: String
+        --
+        + createAppointment(Map<String, dynamic>): Future<void>
+        + acceptAppointment(String): Future<void>
+        + rejectAppointment(String): Future<void>
+        + cancelAppointment(String): Future<void>
+        + deleteAppointment(String): Future<void>
+        + cleanupPastAppointments(): Future<void>
+        + calculateStats(List<DocumentSnapshot>): Map<String, int>
+        + getAppointmentsByStatus(String): Stream<QuerySnapshot>
+    }
+}
+
+' ========== ANIMATION CONTROLLERS ==========
+package "Animations" {
+    class AuthAnimationController {
+        - formController: AnimationController
+        - slideController: AnimationController
+        - backgroundController: AnimationController
+        - exitController: AnimationController
+        - formFade: Animation<double>
+        - slide: Animation<double>
+        - background: Animation<double>
+        - exitSlide: Animation<double>
+        - vsync: TickerProvider
+        --
+        - _setupAnimations(): void
+        + startAnimations(): void
+        + dispose(): void
+    }
+
+    class HomeAnimations {
+        - navAnimationController: AnimationController
+        - scoreAnimationController: AnimationController
+        - buttonAnimationController: AnimationController
+        - headerSlideController: AnimationController
+        - scoreAnimation: Animation<double>
+        - headerSlideAnimation: Animation<Offset>
+        - fadeAnimation: Animation<double>
+        - vsync: TickerProvider
+        --
+        - _setupControllers(): void
+        - _setupAnimations(): void
+        + start(): void
+        + dispose(): void
+    }
+
+    class AppointmentAnimations {
+        - headerSlideController: AnimationController
+        - listAnimationController: AnimationController
+        - tabAnimationController: AnimationController
+        - headerSlideAnimation: Animation<Offset>
+        - fadeAnimation: Animation<double>
+        - listFadeAnimation: Animation<double>
+        - listSlideAnimation: Animation<Offset>
+        - vsync: TickerProvider
+        --
+        - _setupControllers(): void
+        - _setupAnimations(): void
+        + start(): void
+        + reset(): void
+        + dispose(): void
+    }
+
+    class DrAppointmentAnimations {
+        - headerSlideController: AnimationController
+        - listAnimationController: AnimationController
+        - fabAnimationController: AnimationController
+        - headerSlideAnimation: Animation<Offset>
+        - fadeAnimation: Animation<double>
+        - listFadeAnimation: Animation<double>
+        - listSlideAnimation: Animation<Offset>
+        - fabScaleAnimation: Animation<double>
+        - fabRotationAnimation: Animation<double>
+        - vsync: TickerProvider
+        --
+        - _setupControllers(): void
+        - _setupAnimations(): void
+        + start(): void
+        + reset(): void
+        + dispose(): void
+    }
+}
+
+' ========== HELPER / THEME ==========
+package "Helpers" {
+    class AppTheme <<static>> {
+        + {static} darkgreen: Color
+        + {static} lightgreen: Color
+        + {static} darkTheme: ThemeData
+        + {static} lightTheme: ThemeData
+        + {static} successColor: Color
+        + {static} warningColor: Color
+        + {static} errorColor: Color
+        + {static} infoColor: Color
+        --
+        + {static} backgroundColor(bool): Color
+        + {static} cardColor(bool): Color
+        + {static} textColor(bool): Color
+        + {static} textSecondaryColor(bool): Color
+        + {static} headerGradient(bool): List<Color>
+        + {static} cardGradient(bool): List<Color>
+        + {static} dividerColor(bool): Color
+        + {static} shadowColor(bool): Color
+        + {static} primaryButtonStyle(bool): ButtonStyle
+        + {static} secondaryButtonStyle(bool): ButtonStyle
+    }
+}
+
+' ========== RELATIONSHIPS ==========
+
+' Inheritance
+UserProvider --|> ChangeNotifier
+ThemeProvider --|> ChangeNotifier
+SensorProvider --|> ChangeNotifier
+DeviceController --|> ChangeNotifier
+ActivityProvider --|> ChangeNotifier
+BmiController --|> ChangeNotifier
+BloodSugarController --|> ChangeNotifier
+HealthScoreProvider --|> ChangeNotifier
+AppointmentController --|> ChangeNotifier
+
+' Composition / Dependencies
+DeviceModel --> DeviceType : uses
+DeviceModel --> ConnectionStatus : uses
+
+SensorProvider --> SensorData : uses
+SensorProvider --> HealthReading : manages
+SensorProvider --> UserModel : references
+
+BmiController --> HealthReading : manages
+BloodSugarController --> HealthReading : manages
+
+HealthScoreProvider --> BmiController : depends on
+HealthScoreProvider --> SensorProvider : depends on
+
+UserProvider --> UserModel : contains
+
+ChatLogic --> ChatModel : works with
+ChatLogic --> MessageModel : works with
+ChatLogic --> UserModel : references
+
+DeviceController --> DeviceModel : manages
+
+AuthController --> UserModel : creates
+
+' Aggregation
+ChatModel o-- MessageModel : contains
+
+@enduml
