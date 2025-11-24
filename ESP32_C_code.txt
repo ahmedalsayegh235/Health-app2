@@ -1,26 +1,3 @@
-/*
- * ESP32 Health Monitoring System - Optimized for Flutter Integration
- *
- * Key Features:
- * - Dual mode: HR/SpO2 monitoring and ECG recording
- * - MQTT communication with Flutter app
- * - Reduced ECG transmission rate for smooth display
- * - Proper Firebase integration support
- * - Power management with sleep modes
- *
- * Hardware:
- * - ESP32 DevKit
- * - MAX30100 Pulse Oximeter
- * - AD8232 ECG Module
- * - SSD1306 OLED Display (128x64)
- *
- * Connections:
- * - I2C (SDA=21, SCL=22): MAX30100, OLED
- * - ADC (GPIO34): ECG signal input
- * - Button (GPIO0): Mode switch
- * - LED (GPIO2): Mode indicator
- */
-
 #include <Wire.h>
 #include <U8g2lib.h>
 #include "MAX30100_PulseOximeter.h"
@@ -28,20 +5,20 @@
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 
-// ==================== PIN DEFINITIONS ====================
+// -------------------- Pins --------------------
 #define SDA_PIN       21
 #define SCL_PIN       22
 #define ECG_PIN       34
-#define BUTTON_PIN     0
-#define LED_MODE       2
+#define BUTTON_PIN     0        // Boot button on ESP32 boards
+#define LED_MODE       2        // Built-in LED
 
-// ==================== DISPLAY & SENSOR ====================
+// -------------------- Display & Sensor --------------------
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
 PulseOximeter pox;
 
-// ==================== NETWORK ====================
-const char* STA_SSID   = "Mena_F560";
-const char* STA_PASS   = "mena4glte";
+// -------------------- Wi-Fi & MQTT --------------------
+const char* STA_SSID   = "";
+const char* STA_PASS   = "";
 const char* MQTT_HOST  = "broker.hivemq.com";
 const int   MQTT_PORT  = 1883;
 const char* MQTT_TOPIC = "esp32/health";
@@ -49,64 +26,74 @@ const char* MQTT_TOPIC = "esp32/health";
 WiFiClient   wifiClient;
 PubSubClient mqttClient(wifiClient);
 
-// ==================== GLOBAL STATE ====================
+// -------------------- Globals --------------------
 volatile float gHeartRate       = 0.0f;
 volatile float gSpO2            = 0.0f;
 volatile bool  gFingerDetected  = false;
 volatile uint32_t gLastBeatTime = 0;
 volatile bool  gValidBeat       = false;
 
-volatile uint8_t gMode = 0;  // 0=HR/SpO2, 1=ECG
+volatile uint8_t gMode = 0;     // 0 = HR/SpO2, 1 = ECG
 
-// ECG Buffer - Optimized size for 250Hz sampling
-static const int ECG_BUF_SIZE = 125;  // Reduced from 100 to 125 (0.5 seconds at 250Hz)
+// ECG buffer
+static const int ECG_BUF_SIZE = 100;
 volatile uint16_t gEcgBuf[ECG_BUF_SIZE] = {0};
 volatile int gEcgIdx = 0;
 
-// ECG Transmission - Optimized for smooth display
+// ECG transmission tracking
 volatile uint32_t gLastEcgPublish = 0;
-const uint32_t ECG_PUBLISH_INTERVAL = 500;  // Increased from 200ms to 500ms to reduce lag
+const uint32_t ECG_PUBLISH_INTERVAL = 200; // Publish every 200ms
 
-// ECG Analysis
+// ECG analysis
 static uint32_t lastPeakTime = 0;
 static float avgRR = 0;
 static int beatCount = 0;
 static String ecgStatus = "Analyzing...";
 
-// Button & Power Management
+// Button debounce
 volatile uint32_t gLastButtonMs = 0;
 volatile bool gButtonPressed = false;
+
+// Power management
 volatile uint32_t gLastActivityTime = 0;
-volatile uint8_t gPowerMode = 0;
+volatile uint8_t gPowerMode = 0;   // 0=AC, 1=LS, 2=DS
+volatile bool gWakeupFromSleep = false;
+
+// Startup message management
 volatile bool gShowStartupMessage = false;
 volatile uint32_t gStartupMessageStart = 0;
-const uint32_t STARTUP_MESSAGE_DURATION = 3000;
+const uint32_t STARTUP_MESSAGE_DURATION = 3000; // 3 seconds
 
-// Sensor Validation
+// Sensor validation
 volatile uint32_t gLastValidReading = 0;
 volatile uint32_t gSensorNoiseCount = 0;
 volatile bool gSensorInitialized = false;
 
-// MQTT & Time
+// MQTT connection tracking
 volatile bool gMqttConnected = false;
 volatile uint32_t gLastMqttAttempt = 0;
+
+// Time tracking
 unsigned long gBootTime = 0;
+
+// WiFi management
 bool gWiFiInitialized = false;
 
-// Task Handles
+// Task handles
 TaskHandle_t sensorTaskHandle = NULL;
 TaskHandle_t oledTaskHandle = NULL;
 TaskHandle_t mqttTaskHandle = NULL;
 
-// ==================== HELPER FUNCTIONS ====================
+// -------------------- Helpers --------------------
 void markActivity(const char* source) {
   gLastActivityTime = millis();
+  gWakeupFromSleep = false;
 }
 
 void showStartupMessage() {
   gShowStartupMessage = true;
   gStartupMessageStart = millis();
-  Serial.println("✓ Showing startup message");
+  Serial.println("Showing startup message");
 }
 
 void onBeatDetected() {
@@ -117,16 +104,17 @@ void onBeatDetected() {
   }
 }
 
+// Button ISR
 void IRAM_ATTR buttonISR() {
   uint32_t now = millis();
   if (now - gLastButtonMs > 300) {
     gButtonPressed = true;
     gLastButtonMs = now;
-    markActivity("button");
+    markActivity("button-ISR");
   }
 }
 
-// ==================== MQTT FUNCTIONS ====================
+// -------------------- MQTT --------------------
 void ensureMqttConnected() {
   if (mqttClient.connected()) {
     gMqttConnected = true;
@@ -134,126 +122,168 @@ void ensureMqttConnected() {
   }
 
   uint32_t now = millis();
-  if (now - gLastMqttAttempt < 5000) return;
-
+  if (now - gLastMqttAttempt < 5000) {
+    return;
+  }
+  
   gLastMqttAttempt = now;
+  
   String cid = String("ESP32Health-") + String((uint32_t)esp_random(), HEX);
-
-  Serial.printf("Connecting MQTT as %s...\n", cid.c_str());
-
+  Serial.printf("Attempting MQTT connection as %s...\n", cid.c_str());
+  
   if (mqttClient.connect(cid.c_str())) {
-    Serial.println("✓ MQTT Connected");
+    Serial.println("✓ MQTT Connected!");
     gMqttConnected = true;
-
+    
     DynamicJsonDocument doc(256);
-    doc["device"] = "ESP32-Health";
+    doc["device"] = "ESP32-Health-Monitor";
     doc["status"] = "connected";
     doc["ip"] = WiFi.localIP().toString();
     String payload;
     serializeJson(doc, payload);
     mqttClient.publish("esp32/health/status", payload.c_str());
   } else {
-    Serial.printf("✗ MQTT failed, state=%d\n", mqttClient.state());
+    Serial.printf("✗ MQTT Connection failed, state=%d\n", mqttClient.state());
     gMqttConnected = false;
   }
 }
 
 void publishSensorData() {
-  if (!gMqttConnected) return;
+  if (!gMqttConnected) {
+    return;
+  }
 
-  DynamicJsonDocument doc(3072);  // Increased size for ECG data
-  doc["device"] = "ESP32-Health";
-  doc["timestamp"] = millis();
+  DynamicJsonDocument doc(2048);
+  doc["device"] = "ESP32-Health-Monitor";
 
   if (gMode == 0) {
-    // HR/SpO2 Mode
     doc["mode"] = "hr_spo2";
-    doc["heartRate"] = gFingerDetected ? gHeartRate : 0;
-    doc["spo2"] = gFingerDetected ? gSpO2 : 0;
-    doc["fingerDetected"] = gFingerDetected;
-    doc["validBeat"] = gValidBeat;
-
-  } else {
-    // ECG Mode - Send buffered data
+    
+    if (gFingerDetected) {
+      doc["heartRate"]  = gHeartRate;
+      doc["spo2"]       = gSpO2;
+      doc["fingerDetected"] = true;
+      doc["validBeat"] = gValidBeat;
+    } else {
+      doc["heartRate"]  = 0;
+      doc["spo2"]       = 0;
+      doc["fingerDetected"] = false;
+      doc["validBeat"] = false;
+    }
+    
+    doc["timestamp"]  = millis();
+    doc["powerMode"]  = gPowerMode;
+    
+  } else if (gMode == 1) {
     doc["mode"] = "ecg";
-
+    
     JsonArray ecgArray = doc.createNestedArray("ecg");
     int currentIdx = gEcgIdx;
-
-    // Send all samples in buffer
+    
     for (int i = 0; i < ECG_BUF_SIZE; i++) {
       int pos = (currentIdx + i) % ECG_BUF_SIZE;
       ecgArray.add((int)gEcgBuf[pos]);
     }
-
+    
     doc["status"] = ecgStatus;
+    doc["timestamp"] = millis();
+    doc["powerMode"] = gPowerMode;
     doc["sampleRate"] = 250;
     doc["beatCount"] = beatCount;
-
+    
     if (avgRR > 0) {
-      doc["calculatedBPM"] = (int)avgRR;
+      doc["calculatedBPM"] = avgRR;
     }
   }
 
   String payload;
   serializeJson(doc, payload);
-
+  
   if (mqttClient.publish(MQTT_TOPIC, payload.c_str(), false)) {
-    // Success - no need to log every publish
+    Serial.printf("✓ Published %s data\n", (gMode == 0) ? "HR/SpO2" : "ECG");
   } else {
     gMqttConnected = false;
-    Serial.println("✗ MQTT publish failed");
   }
 }
 
-// ==================== WIFI FUNCTIONS ====================
+// -------------------- Wi-Fi --------------------
 void connectWiFi() {
-  if (WiFi.status() == WL_CONNECTED) return;
-
+  if (WiFi.status() == WL_CONNECTED) {
+    return;
+  }
+  
   if (gWiFiInitialized) {
-    Serial.println("Reconnecting WiFi...");
+    Serial.println("WiFi disconnected, reconnecting...");
     WiFi.reconnect();
+    
     uint32_t start = millis();
     while (WiFi.status() != WL_CONNECTED && millis() - start < 10000) {
       delay(500);
       Serial.print(".");
     }
+    Serial.println();
+    
     if (WiFi.status() == WL_CONNECTED) {
-      Serial.println("\n✓ WiFi Reconnected");
+      Serial.println("✓ WiFi Reconnected");
+      Serial.print("IP Address: ");
+      Serial.println(WiFi.localIP());
     }
     return;
   }
-
-  Serial.println("Initializing WiFi...");
+  
+  Serial.println("Initializing WiFi for the first time...");
   WiFi.mode(WIFI_STA);
   WiFi.setAutoReconnect(true);
+  WiFi.persistent(true);
   WiFi.begin(STA_SSID, STA_PASS);
 
   uint32_t start = millis();
+  int dots = 0;
   while (WiFi.status() != WL_CONNECTED && millis() - start < 15000) {
     delay(500);
     Serial.print(".");
+    dots++;
+    if (dots % 20 == 0) Serial.println();
   }
   Serial.println();
-
+  
   if (WiFi.status() == WL_CONNECTED) {
     Serial.println("✓ WiFi Connected");
-    Serial.print("IP: ");
+    Serial.print("IP Address: ");
     Serial.println(WiFi.localIP());
+    Serial.print("Signal Strength: ");
+    Serial.print(WiFi.RSSI());
+    Serial.println(" dBm");
     gWiFiInitialized = true;
   } else {
-    Serial.println("✗ WiFi Failed");
+    Serial.println("✗ WiFi Connection Failed");
   }
 }
 
-// ==================== POWER MANAGEMENT ====================
+// -------------------- Power Management --------------------
+void enterDeepSleep() {
+  Serial.println("Entering deep sleep mode...");
+  
+  mqttClient.disconnect();
+  WiFi.disconnect(true);
+  
+  esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
+  esp_sleep_enable_ext0_wakeup((gpio_num_t)BUTTON_PIN, 0);
+  
+  delay(100);
+  esp_deep_sleep_start();
+}
+
 void enterLightSleep() {
-  Serial.println("Entering light sleep...");
+  Serial.println("Entering light sleep mode...");
+  
   esp_sleep_enable_gpio_wakeup();
   gpio_wakeup_enable((gpio_num_t)BUTTON_PIN, GPIO_INTR_LOW_LEVEL);
   esp_sleep_enable_timer_wakeup(10000000);
+  
   esp_light_sleep_start();
-  Serial.println("Woke from light sleep");
+  
+  Serial.println("Woke up from light sleep");
 }
 
 void resumeAllTasks() {
@@ -275,144 +305,177 @@ void suspendNonCriticalTasks() {
   if (oledTaskHandle && eTaskGetState(oledTaskHandle) != eSuspended) {
     vTaskSuspend(oledTaskHandle);
   }
+  if (mqttTaskHandle && eTaskGetState(mqttTaskHandle) != eSuspended) {
+    vTaskSuspend(mqttTaskHandle);
+  }
 }
 
-// ==================== FREERTOS TASKS ====================
+// -------------------- FreeRTOS Tasks --------------------
 
-// Sensor Task - Handles MAX30100 and ECG sampling
+// Sensor Task
 void taskSensor(void* parameter) {
-  uint32_t lastDebugPrint = 0;
+  uint32_t lastSensorCheck = 0;
   float lastValidHR = 0;
   float lastValidSpO2 = 0;
-
-  const uint32_t ECG_SAMPLE_INTERVAL_US = 4000;  // 250Hz = 4ms per sample
+  uint16_t lastRaw = 0;
+  
+  const uint32_t ECG_SAMPLE_INTERVAL_US = 4000;
   uint32_t lastEcgSampleTime = 0;
+  
+  uint32_t lastDebugPrint = 0;
 
   for (;;) {
     if (gMode == 0) {
-      // ===== PULSE OXIMETER MODE =====
+      // Pulse oximeter mode
       pox.update();
       float hr = pox.getHeartRate();
       float sp = pox.getSpO2();
-
+      
       uint32_t now = millis();
-
-      // Debug print every 5 seconds
+      
       if (now - lastDebugPrint > 5000) {
         Serial.printf("[Sensor] HR=%.1f, SpO2=%.1f\n", hr, sp);
         lastDebugPrint = now;
       }
-
-      bool rawFingerDetected = (hr > 0 && sp > 0);
-
-      // Validate readings
+      
+      bool rawFingerDetected = false;
+      
+      if (hr > 0 && sp > 0) {
+        rawFingerDetected = true;
+      }
+      
       if (rawFingerDetected) {
-        if (hr < 30 || hr > 220 || sp < 70 || sp > 100) {
+        if (hr < 30 || hr > 220) {
           rawFingerDetected = false;
           gSensorNoiseCount++;
         }
+        
+        if (sp < 70 || sp > 100) {
+          rawFingerDetected = false;
+          gSensorNoiseCount++;
+        }
+        
         if (abs(hr - lastValidHR) > 50 && lastValidHR > 0) {
           rawFingerDetected = false;
+          gSensorNoiseCount++;
         }
       }
-
+      
       if (rawFingerDetected && gSensorNoiseCount < 10) {
         if (!gFingerDetected) {
           gFingerDetected = true;
-          Serial.println("✓ Finger ON");
+          gLastValidReading = now;
+          markActivity("finger-on");
+          Serial.println("✓ Finger detected ON");
         }
-
+        
         if (hr > 30 && hr < 220) {
           gHeartRate = hr;
           lastValidHR = hr;
+          markActivity("sensor-HR");
         }
+        
         if (sp > 70 && sp <= 100) {
           gSpO2 = sp;
           lastValidSpO2 = sp;
+          markActivity("sensor-SpO2");
         }
-
+        
         gLastValidReading = now;
         gSensorNoiseCount = max(0, (int)gSensorNoiseCount - 1);
-
+        
       } else {
         if (now - gLastValidReading > 3000) {
           if (gFingerDetected) {
             gFingerDetected = false;
             gValidBeat = false;
-            Serial.println("✗ Finger OFF");
+            Serial.println("✗ Finger detected OFF");
           }
+          
           if (now - gLastValidReading > 5000) {
             gHeartRate = 0;
             gSpO2 = 0;
             lastValidHR = 0;
             lastValidSpO2 = 0;
+            gSensorNoiseCount = max(0, (int)gSensorNoiseCount - 2);
           }
         }
       }
-
+      
+      if (now - lastSensorCheck > 10000) {
+        gSensorNoiseCount = 0;
+        lastSensorCheck = now;
+      }
+      
       vTaskDelay(pdMS_TO_TICKS(50));
-
+      
     } else {
-      // ===== ECG MODE =====
+      // ECG mode
       uint32_t currentMicros = micros();
-
+      
       if (currentMicros - lastEcgSampleTime >= ECG_SAMPLE_INTERVAL_US) {
         lastEcgSampleTime = currentMicros;
-
+        
         uint16_t raw = analogRead(ECG_PIN);
         gEcgBuf[gEcgIdx] = raw;
         gEcgIdx = (gEcgIdx + 1) % ECG_BUF_SIZE;
 
-        // R-peak detection (simple threshold-based)
+        if (abs((int)raw - (int)lastRaw) > 20) {
+          markActivity("ecg-sample");
+          lastRaw = raw;
+        }
+
         if (raw > 2500) {
           uint32_t now = millis();
-          if (now - lastPeakTime > 300) {  // Min 200 BPM
+          if (now - lastPeakTime > 300) {
             uint32_t rr = now - lastPeakTime;
             lastPeakTime = now;
 
             float bpm = 60000.0f / rr;
-
+            
             if (bpm >= 40 && bpm <= 180) {
               avgRR = (avgRR * 0.8f) + (bpm * 0.2f);
               beatCount++;
 
               if (beatCount > 5) {
                 if (avgRR >= 60 && avgRR <= 100) {
-                  ecgStatus = "Normal Sinus Rhythm";
-                } else if (avgRR < 60) {
-                  ecgStatus = "Bradycardia";
-                } else if (avgRR > 100) {
-                  ecgStatus = "Tachycardia";
+                  ecgStatus = "Normal";
+                } else if (avgRR < 50 || avgRR > 120) {
+                  ecgStatus = "Abnormal!";
+                } else {
+                  ecgStatus = "Irregular";
                 }
               }
+              
+              markActivity("ecg-beat");
             }
           }
         }
       }
-
+      
       vTaskDelay(pdMS_TO_TICKS(1));
     }
   }
 }
 
-// OLED Task - Display management
+// OLED Task
 void taskOLED(void* parameter) {
   for (;;) {
     u8g2.clearBuffer();
 
-    // Startup Message
     if (gShowStartupMessage) {
       uint32_t elapsed = millis() - gStartupMessageStart;
       if (elapsed < STARTUP_MESSAGE_DURATION) {
         u8g2.setFont(u8g2_font_ncenB10_tr);
-        const char* lines[] = {"Health", "Monitoring", "System"};
-        int y = 20;
-        for (int i = 0; i < 3; i++) {
-          int w = u8g2.getStrWidth(lines[i]);
-          u8g2.setCursor((128 - w) / 2, y);
-          u8g2.print(lines[i]);
-          y += 15;
-        }
+        const char* line1 = "Health";
+        const char* line2 = "Monitoring";
+        const char* line3 = "System";
+        int width1 = u8g2.getStrWidth(line1);
+        int width2 = u8g2.getStrWidth(line2);
+        int width3 = u8g2.getStrWidth(line3);
+        u8g2.setCursor((128 - width1) / 2, 20); u8g2.print(line1);
+        u8g2.setCursor((128 - width2) / 2, 35); u8g2.print(line2);
+        u8g2.setCursor((128 - width3) / 2, 50); u8g2.print(line3);
         u8g2.sendBuffer();
         vTaskDelay(pdMS_TO_TICKS(100));
         continue;
@@ -422,151 +485,204 @@ void taskOLED(void* parameter) {
     }
 
     if (gMode == 0) {
-      // ===== HR/SPO2 DISPLAY =====
+      // HR/SpO2 display mode - ENHANCED DESIGN
+      
       unsigned long elapsed = (millis() - gBootTime) / 1000;
       int hours = elapsed / 3600;
       int minutes = (elapsed % 3600) / 60;
       int seconds = elapsed % 60;
-
-      // Header
+      
+      // Header with time
       u8g2.drawBox(0, 0, 128, 11);
       u8g2.setColorIndex(0);
       u8g2.setFont(u8g2_font_6x10_tr);
       u8g2.setCursor(2, 9);
       u8g2.print("VITALS");
-
+      
       char timeStr[10];
       sprintf(timeStr, "%02d:%02d:%02d", hours, minutes, seconds);
       int timeWidth = u8g2.getStrWidth(timeStr);
       u8g2.setCursor(128 - timeWidth - 2, 9);
       u8g2.print(timeStr);
+      
       u8g2.setColorIndex(1);
-
+      
       if (gFingerDetected) {
-        // Heart Rate
+        // Heart Rate Section
         u8g2.setFont(u8g2_font_logisoso20_tn);
         char hrStr[5];
         sprintf(hrStr, "%d", (int)gHeartRate);
+        int hrWidth = u8g2.getStrWidth(hrStr);
         u8g2.setCursor(10, 35);
         u8g2.print(hrStr);
-
+        
         u8g2.setFont(u8g2_font_6x10_tr);
-        u8g2.setCursor(10 + u8g2.getStrWidth(hrStr) + 3, 35);
+        u8g2.setCursor(10 + hrWidth + 3, 35);
         u8g2.print("bpm");
-
+        
         u8g2.setFont(u8g2_font_5x7_tr);
         u8g2.setCursor(10, 42);
         u8g2.print("Heart Rate");
-
+        
         u8g2.drawLine(0, 46, 128, 46);
-
-        // SpO2
+        
+        // SpO2 Section
         u8g2.setFont(u8g2_font_logisoso16_tn);
         char spo2Str[5];
         sprintf(spo2Str, "%d", (int)gSpO2);
+        int spo2Width = u8g2.getStrWidth(spo2Str);
         u8g2.setCursor(12, 62);
         u8g2.print(spo2Str);
-
+        
         u8g2.setFont(u8g2_font_6x10_tr);
-        u8g2.setCursor(12 + u8g2.getStrWidth(spo2Str) + 2, 62);
-        u8g2.print("% SpO2");
-
+        u8g2.setCursor(12 + spo2Width + 2, 62);
+        u8g2.print("%");
+        
+        u8g2.setFont(u8g2_font_5x7_tr);
+        u8g2.setCursor(12 + spo2Width + 14, 62);
+        u8g2.print("SpO2");
+        
         // Animated heart
         if (gValidBeat && (millis() - gLastBeatTime < 300)) {
           u8g2.drawBox(110, 52, 8, 8);
           u8g2.drawBox(118, 52, 8, 8);
           u8g2.drawBox(106, 56, 24, 6);
           u8g2.drawTriangle(106, 62, 130, 62, 118, 64);
+        } else {
+          u8g2.drawFrame(110, 52, 8, 8);
+          u8g2.drawFrame(118, 52, 8, 8);
+          u8g2.drawFrame(106, 56, 24, 6);
+          u8g2.drawLine(106, 62, 118, 64);
+          u8g2.drawLine(130, 62, 118, 64);
         }
-
+        
       } else {
-        // No finger
+        // No finger detected
         u8g2.setFont(u8g2_font_ncenB08_tr);
+        
         const char* msg1 = "Place finger";
         const char* msg2 = "on sensor";
-        u8g2.setCursor((128 - u8g2.getStrWidth(msg1)) / 2, 30);
+        int width1 = u8g2.getStrWidth(msg1);
+        int width2 = u8g2.getStrWidth(msg2);
+        
+        u8g2.setCursor((128 - width1) / 2, 30);
         u8g2.print(msg1);
-        u8g2.setCursor((128 - u8g2.getStrWidth(msg2)) / 2, 45);
+        u8g2.setCursor((128 - width2) / 2, 45);
         u8g2.print(msg2);
-
+        
         u8g2.drawFrame(54, 50, 20, 12);
         u8g2.drawBox(58, 52, 12, 8);
       }
-
-      // Status bar
+      
+      // Bottom status bar
       u8g2.setFont(u8g2_font_5x7_tr);
+      
       u8g2.setCursor(2, 64);
-      u8g2.print(WiFi.status() == WL_CONNECTED ? "WiFi" : "----");
+      if (WiFi.status() == WL_CONNECTED) {
+        u8g2.print("WiFi");
+      } else {
+        u8g2.print("----");
+      }
+      
       u8g2.setCursor(30, 64);
       u8g2.print("|");
+      
       u8g2.setCursor(35, 64);
-      u8g2.print(gMqttConnected ? "MQTT" : "----");
-
+      if (gMqttConnected) {
+        u8g2.print("MQTT");
+      } else {
+        u8g2.print("----");
+      }
+      
+      u8g2.setCursor(110, 64);
+      u8g2.print(gPowerMode == 0 ? "AC" : gPowerMode == 1 ? "LS" : "DS");
+      
     } else {
-      // ===== ECG DISPLAY =====
+      // ECG display mode
       u8g2.setFont(u8g2_font_6x10_tr);
+      
       u8g2.setCursor(2, 8);
-      u8g2.print("ECG MONITOR");
-
+      u8g2.print("ECG");
+      
       if (avgRR > 0 && beatCount > 5) {
         u8g2.setFont(u8g2_font_ncenB08_tr);
-        u8g2.setCursor(80, 8);
+        u8g2.setCursor(70, 8);
         u8g2.print((int)avgRR);
         u8g2.print(" bpm");
+      } else {
+        u8g2.setFont(u8g2_font_6x10_tr);
+        u8g2.setCursor(70, 8);
+        u8g2.print("-- bpm");
       }
-
-      // ECG Waveform
+      
+      const int W = 128, H = 64;
       const int graphHeight = 35;
       const int graphY = 12;
-      u8g2.drawFrame(0, graphY, 128, graphHeight);
-
-      for (int i = 1; i < min(ECG_BUF_SIZE, 127); i++) {
+      
+      u8g2.drawFrame(0, graphY, W, graphHeight);
+      
+      for (int i = 1; i < min(ECG_BUF_SIZE, W-1); i++) {
         int i0 = (gEcgIdx + i - 1) % ECG_BUF_SIZE;
         int i1 = (gEcgIdx + i) % ECG_BUF_SIZE;
-        int y0 = graphY + graphHeight - 1 - map(gEcgBuf[i0], 0, 4095, 1, graphHeight - 2);
-        int y1 = graphY + graphHeight - 1 - map(gEcgBuf[i1], 0, 4095, 1, graphHeight - 2);
-        u8g2.drawLine(i - 1, y0, i, y1);
+        int raw0 = gEcgBuf[i0];
+        int raw1 = gEcgBuf[i1];
+        
+        int y0 = graphY + graphHeight - 1 - map(raw0, 0, 4095, 1, graphHeight - 2);
+        int y1 = graphY + graphHeight - 1 - map(raw1, 0, 4095, 1, graphHeight - 2);
+        int x0 = i - 1;
+        int x1 = i;
+        
+        if (x1 < W-1) {
+          u8g2.drawLine(x0, y0, x1, y1);
+        }
       }
-
-      // Status
-      u8g2.setFont(u8g2_font_5x7_tr);
+      
+      u8g2.setFont(u8g2_font_6x10_tr);
+      
       u8g2.setCursor(2, 56);
-      u8g2.print(ecgStatus.substring(0, 20));
-
+      u8g2.print("Status: ");
+      u8g2.print(ecgStatus);
+      
       u8g2.setCursor(2, 64);
       u8g2.print("Beats: ");
       u8g2.print(beatCount);
+      
+      u8g2.setCursor(110, 64);
+      u8g2.setFont(u8g2_font_5x7_tr);
+      u8g2.print("AC");
     }
 
     u8g2.sendBuffer();
-
+    
     if (gValidBeat && (millis() - gLastBeatTime > 500)) {
       gValidBeat = false;
     }
-
-    vTaskDelay(pdMS_TO_TICKS(gMode == 0 ? 50 : 30));
+    
+    int delayTime = (gPowerMode == 1 && gMode == 0) ? 200 : 50;
+    vTaskDelay(pdMS_TO_TICKS(delayTime));
   }
 }
 
-// MQTT Task - Network communication
+// MQTT Task
 void taskMQTT(void* parameter) {
   uint32_t lastHrSpO2Publish = 0;
   const uint32_t HR_SPO2_PUBLISH_INTERVAL = 2000;
 
   for (;;) {
     connectWiFi();
-
+    
     if (WiFi.status() == WL_CONNECTED) {
       if (!mqttClient.connected()) {
         ensureMqttConnected();
       }
+      
       if (mqttClient.connected()) {
         mqttClient.loop();
       }
     }
 
     uint32_t now = millis();
-
+    
     if (gMode == 0) {
       if (now - lastHrSpO2Publish >= HR_SPO2_PUBLISH_INTERVAL) {
         publishSensorData();
@@ -578,12 +694,12 @@ void taskMQTT(void* parameter) {
         gLastEcgPublish = now;
       }
     }
-
+    
     vTaskDelay(pdMS_TO_TICKS(100));
   }
 }
 
-// Button Task - Mode switching
+// Button Task
 void taskButton(void* parameter) {
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(BUTTON_PIN), buttonISR, FALLING);
@@ -591,40 +707,66 @@ void taskButton(void* parameter) {
   for (;;) {
     if (gButtonPressed) {
       gButtonPressed = false;
-
+      
       uint8_t oldMode = gMode;
       gMode = (gMode == 0) ? 1 : 0;
       digitalWrite(LED_MODE, (gMode == 1) ? HIGH : LOW);
-
+      markActivity("button");
+      
       Serial.println("\n================================");
-      Serial.printf("MODE: %s → %s\n",
+      Serial.printf("MODE SWITCH: %s → %s\n", 
         (oldMode == 0) ? "HR/SpO2" : "ECG",
         (gMode == 0) ? "HR/SpO2" : "ECG");
       Serial.println("================================\n");
 
       if (gMode == 1) {
-        // Switching to ECG
+        // Switching to ECG mode
         for (int i = 0; i < ECG_BUF_SIZE; i++) gEcgBuf[i] = 0;
         gEcgIdx = 0;
         ecgStatus = "Analyzing...";
         beatCount = 0;
         avgRR = 0;
         lastPeakTime = 0;
-        Serial.println("✓ ECG mode activated");
-
-      } else {
-        // Switching to HR/SpO2
+        gLastEcgPublish = 0;
+        
         gFingerDetected = false;
         gValidBeat = false;
         gHeartRate = 0;
         gSpO2 = 0;
-
-        Serial.println("Reinitializing MAX30100...");
+        
+        Serial.println("✓ ECG mode activated");
+        Serial.println("WiFi remains connected");
+        
+      } else {
+        // Switching to HR/SpO2 mode
+        gFingerDetected = false;
+        gValidBeat = false;
+        gHeartRate = 0;
+        gSpO2 = 0;
+        gSensorNoiseCount = 0;
+        gLastValidReading = 0;
+        
+        Serial.println("Reinitializing pulse oximeter...");
         if (pox.begin()) {
           pox.setOnBeatDetectedCallback(onBeatDetected);
           pox.setIRLedCurrent(MAX30100_LED_CURR_50MA);
-          Serial.println("✓ MAX30100 reinitialized");
+          gSensorInitialized = true;
+          Serial.println("✓ Pulse oximeter reinitialized");
+        } else {
+          Serial.println("✗ Failed to reinitialize pulse oximeter");
+          gSensorInitialized = false;
         }
+        
+        Serial.println("✓ HR/SpO2 mode activated");
+        Serial.println("WiFi remains connected");
+      }
+      
+      // Verify WiFi is still connected
+      Serial.printf("WiFi Status: %s\n", 
+        WiFi.status() == WL_CONNECTED ? "Connected" : "Disconnected");
+      if (WiFi.status() == WL_CONNECTED) {
+        Serial.print("IP: ");
+        Serial.println(WiFi.localIP());
       }
     }
     vTaskDelay(pdMS_TO_TICKS(50));
@@ -633,78 +775,139 @@ void taskButton(void* parameter) {
 
 // Power Manager Task
 void taskPowerManager(void* parameter) {
-  const uint32_t LS_THRESHOLD = 30000;
+  const uint32_t LS_THRESHOLD = 20000;
+  const uint32_t DS_THRESHOLD = 60000;
 
   for (;;) {
-    uint32_t inactive = millis() - gLastActivityTime;
-
-    if (gMode == 0 && !gFingerDetected && inactive > LS_THRESHOLD) {
-      Serial.println("Entering power save mode...");
-      u8g2.setPowerSave(1);
-      suspendNonCriticalTasks();
-      enterLightSleep();
-      u8g2.setPowerSave(0);
-      resumeAllTasks();
-      markActivity("wake");
+    uint32_t now = millis();
+    uint32_t inactive = now - gLastActivityTime;
+    uint8_t newMode = gPowerMode;
+    
+    if (inactive < LS_THRESHOLD) {
+      newMode = 0;
+    } else if (inactive < DS_THRESHOLD) {
+      newMode = 1;
+    } else {
+      newMode = 2;
+    }
+    
+    if (gMode == 1) {
+      newMode = 0;
+    }
+    
+    if (gMode == 0 && gFingerDetected) {
+      newMode = 0;
+      markActivity("finger-present");
     }
 
-    vTaskDelay(pdMS_TO_TICKS(5000));
+    if (newMode != gPowerMode) {
+      gPowerMode = newMode;
+      Serial.printf("Power mode -> %s (inactive: %lu ms)\n",
+        (gPowerMode==0)?"AC":(gPowerMode==1)?"LS":"DS", inactive);
+
+      switch(gPowerMode) {
+        case 0:
+          u8g2.setPowerSave(0);
+          resumeAllTasks();
+          break;
+          
+        case 1:
+          u8g2.setPowerSave(0);
+          resumeAllTasks();
+          break;
+          
+        case 2:
+          Serial.println("Entering deep sleep management...");
+          u8g2.setPowerSave(1);
+          suspendNonCriticalTasks();
+          
+          enterLightSleep();
+          
+          esp_sleep_wakeup_cause_t cause = esp_sleep_get_wakeup_cause();
+          if (cause == ESP_SLEEP_WAKEUP_GPIO) {
+            Serial.println("Woke up from sleep by button press");
+            u8g2.setPowerSave(0);
+            showStartupMessage();
+            resumeAllTasks();
+            markActivity("wake-button");
+            gPowerMode = 0;
+          }
+          break;
+      }
+    }
+    
+    vTaskDelay(pdMS_TO_TICKS(1000));
   }
 }
 
-// ==================== SETUP & LOOP ====================
+// -------------------- Setup / Loop --------------------
 void setup() {
   Serial.begin(115200);
   delay(500);
-
-  Serial.println("\n================================");
-  Serial.println("  ESP32 Health Monitor v2.0");
+  
+  Serial.println("\n\n================================");
+  Serial.println("   Health Monitoring System");
   Serial.println("================================\n");
-
+  
   Wire.begin(SDA_PIN, SCL_PIN);
   Wire.setClock(400000);
   Serial.println("✓ I2C initialized");
-
+  
   u8g2.begin();
-  Serial.println("✓ OLED initialized");
-
+  u8g2.setFont(u8g2_font_ncenB08_tr);
+  Serial.println("✓ OLED display initialized");
+  
   pinMode(LED_MODE, OUTPUT);
   digitalWrite(LED_MODE, LOW);
+  Serial.println("✓ LED initialized");
 
   Serial.println("Initializing MAX30100...");
   if (!pox.begin()) {
-    Serial.println("✗ MAX30100 FAILED");
+    Serial.println("✗ MAX30100 initialization FAILED!");
+    gSensorInitialized = false;
   } else {
-    Serial.println("✓ MAX30100 OK");
+    Serial.println("✓ MAX30100 initialized successfully");
     pox.setOnBeatDetectedCallback(onBeatDetected);
     pox.setIRLedCurrent(MAX30100_LED_CURR_50MA);
     gSensorInitialized = true;
   }
 
+  Serial.println("\nConnecting to WiFi...");
   connectWiFi();
-
+  
   if (WiFi.status() == WL_CONNECTED) {
     mqttClient.setServer(MQTT_HOST, MQTT_PORT);
-    mqttClient.setBufferSize(3072);
+    mqttClient.setBufferSize(2048);
     Serial.println("✓ MQTT configured");
   }
-
+  
   gBootTime = millis();
   markActivity("boot");
 
-  Serial.println("\nCreating FreeRTOS tasks...");
-  xTaskCreate(taskSensor, "Sensor", 4096, NULL, 3, &sensorTaskHandle);
-  xTaskCreate(taskOLED,   "OLED",   4096, NULL, 2, &oledTaskHandle);
-  xTaskCreate(taskMQTT,   "MQTT",   4096, NULL, 1, &mqttTaskHandle);
-  xTaskCreate(taskButton, "Button", 2048, NULL, 4, NULL);
-  xTaskCreate(taskPowerManager, "Power", 3072, NULL, 1, NULL);
+  Serial.println("\nCreating tasks...");
+  xTaskCreate(taskSensor, "SensorTask", 4096, NULL, 3, &sensorTaskHandle);
+  xTaskCreate(taskOLED,   "OLEDTask",   4096, NULL, 2, &oledTaskHandle);
+  xTaskCreate(taskMQTT,   "MQTTTask",   4096, NULL, 1, &mqttTaskHandle);
+  xTaskCreate(taskButton, "ButtonTask", 2048, NULL, 4, NULL);
+  xTaskCreate(taskPowerManager, "PowerTask", 3072, NULL, 1, NULL);
   Serial.println("✓ All tasks created");
 
-  showStartupMessage();
-
-  Serial.println("\n✓ Setup complete");
-  Serial.println("================================");
-  Serial.println("Press BOOT button to switch modes\n");
+  esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
+  if (wakeup_reason == ESP_SLEEP_WAKEUP_EXT0) {
+    Serial.println("Woke up from deep sleep via button");
+    gWakeupFromSleep = true;
+    markActivity("wake-from-DS");
+    showStartupMessage();
+    gPowerMode = 0;
+  } else {
+    Serial.println("Normal boot");
+    showStartupMessage();
+  }
+  
+  Serial.println("\n✓ Setup completed");
+  Serial.println("================================\n");
+  Serial.println("Press BOOT button to switch modes");
+  Serial.println("Mode 0: HR/SpO2 | Mode 1: ECG\n");
 }
 
 void loop() {
