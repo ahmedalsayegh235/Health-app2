@@ -193,38 +193,64 @@ class SensorProvider with ChangeNotifier {
   }
 
   void _analyzeEcgSamples(List<double> samples) {
-    final threshold = 0.5; // mV threshold for R-peak detection
+    if (samples.isEmpty) return;
+
+    // Dynamic threshold based on signal characteristics
+    final maxVal = samples.reduce(math.max);
+    final minVal = samples.reduce(math.min);
+    final range = maxVal - minVal;
+    final threshold = minVal + (range * 0.6); // 60% of signal range
+
     final minRRInterval = 0.3; // Minimum 300ms between peaks (200 BPM max)
-    
-    for (int i = 2; i < samples.length - 2; i++) {
+    final maxRRInterval = 2.0; // Maximum 2s between peaks (30 BPM min)
+
+    // Get the starting index for this batch of samples in the overall recording
+    final batchStartIndex = _ecgRecordingBuffer.length - samples.length;
+
+    for (int i = 3; i < samples.length - 3; i++) {
       final current = samples[i];
+
+      // Use more samples for peak detection (more robust)
       final prev1 = samples[i - 1];
       final prev2 = samples[i - 2];
+      final prev3 = samples[i - 3];
       final next1 = samples[i + 1];
       final next2 = samples[i + 2];
-      
-      // Detect R-peak: local maximum above threshold
-      if (current > threshold &&
-          current > prev1 && current > prev2 &&
-          current > next1 && current > next2) {
-        
-        double currentTime = (_ecgRecordingBuffer.length + i) / ECG_SAMPLE_RATE;
-        
-        // Check minimum RR interval
-        if (currentTime - _lastRPeakTime > minRRInterval) {
+      final next3 = samples[i + 3];
+
+      // Improved R-peak detection: strong local maximum above threshold
+      final isLocalMax = current > prev1 && current > prev2 && current > prev3 &&
+                         current > next1 && current > next2 && current > next3;
+
+      final isAboveThreshold = current > threshold;
+
+      // Additional check: ensure it's a significant peak (not noise)
+      final peakStrength = current - ((prev1 + prev2 + next1 + next2) / 4);
+      final isSignificantPeak = peakStrength > 0.1; // At least 0.1mV above neighbors
+
+      if (isLocalMax && isAboveThreshold && isSignificantPeak) {
+        // Calculate correct time: (absolute index in buffer) / sample rate
+        double currentTime = (batchStartIndex + i) / ECG_SAMPLE_RATE;
+
+        // Check RR interval is within physiological range
+        final rrInterval = currentTime - _lastRPeakTime;
+
+        if (rrInterval > minRRInterval && rrInterval < maxRRInterval) {
           _qrsCount++;
-          
+
           // Calculate RR interval
           if (_lastRPeakTime > 0) {
-            double rrInterval = currentTime - _lastRPeakTime;
             _rRIntervals.add(rrInterval);
           }
-          
+
+          _lastRPeakTime = currentTime;
+        } else if (rrInterval > maxRRInterval && _lastRPeakTime > 0) {
+          // Reset if too much time has passed (likely missed beats or paused recording)
           _lastRPeakTime = currentTime;
         }
       }
     }
-    
+
     _updateSignalQuality(samples);
   }
 
