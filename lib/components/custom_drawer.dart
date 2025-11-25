@@ -61,7 +61,7 @@ class CustomDrawer extends StatelessWidget {
                           user != null && user.email != null && user.email!.isNotEmpty
                           ? '${user.email}'
                           : 'undefined user', // just incase firebase becomes dumb
-                      style: TextStyle(fontSize: 14, color: Colors.white70),
+                      style: TextStyle(fontSize: 12, color: Colors.white70),
                     ),
                   ],
                 ),
