@@ -82,7 +82,7 @@ class HeaderSection extends StatelessWidget {
                           StatusIndicator(),
                           const SizedBox(width: 8),
                           
-                          // FIXED: Use Flexible instead of Expanded in constrained Row
+                          
                           Flexible(
                             child: Text(
                               user != null &&

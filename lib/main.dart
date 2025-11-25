@@ -16,6 +16,7 @@ import 'package:health/auth_view/login.dart';
 import 'package:health/auth_view/signup.dart';
 import 'package:provider/provider.dart';
 import 'helpers/theme_provider.dart';
+import 'helpers/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,22 +26,26 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => UserProvider()),
-        ChangeNotifierProvider(create: (_) => ActivityProvider()..loadActivities()),
+        ChangeNotifierProvider(
+          create: (_) => ActivityProvider()..loadActivities(),
+        ),
         ChangeNotifierProvider(create: (_) => SensorProvider()),
         ChangeNotifierProvider(create: (_) => BmiController()),
         ChangeNotifierProvider(create: (_) => BloodSugarController()),
-        
+
         // FIXED: Use ProxyProvider to get the actual instances from the tree
-        ChangeNotifierProxyProvider2<BmiController, SensorProvider, HealthScoreProvider>(
+        ChangeNotifierProxyProvider2<
+          BmiController,
+          SensorProvider,
+          HealthScoreProvider
+        >(
           create: (context) => HealthScoreProvider(
             bmiController: Provider.of<BmiController>(context, listen: false),
             sensorProvider: Provider.of<SensorProvider>(context, listen: false),
           ),
-          update: (context, bmi, sensor, previous) => 
-            previous ?? HealthScoreProvider(
-              bmiController: bmi,
-              sensorProvider: sensor,
-            ),
+          update: (context, bmi, sensor, previous) =>
+              previous ??
+              HealthScoreProvider(bmiController: bmi, sensorProvider: sensor),
         ),
       ],
       child: const MainApp(),
@@ -56,8 +61,8 @@ class MainApp extends StatelessWidget {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         return MaterialApp(
-          theme: ThemeData.light(),
-          darkTheme: ThemeData.dark(),
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
           themeMode: themeProvider.isDarkMode
               ? ThemeMode.dark
               : ThemeMode.light,

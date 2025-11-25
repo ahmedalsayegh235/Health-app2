@@ -111,6 +111,7 @@ class MetricCard extends StatelessWidget {
                         child: Text(
                           "${isPositive ? '+' : ''}${percentChange.toStringAsFixed(1)}%",
                           style: TextStyle(
+                            fontFamily: AppTheme.fontFamily,
                             fontSize: 8,
                             color: isPositive ? Colors.green : Colors.red,
                             fontWeight: FontWeight.w600,
@@ -126,6 +127,7 @@ class MetricCard extends StatelessWidget {
                   Text(
                     title,
                     style: TextStyle(
+                      fontFamily: AppTheme.fontFamily,
                       fontSize: 11.5,
                       color: AppTheme.textSecondaryColor(isDarkMode),
                       fontWeight: FontWeight.w500,
@@ -141,6 +143,7 @@ class MetricCard extends StatelessWidget {
                       Text(
                         value.toStringAsFixed(1),
                         style: TextStyle(
+                          fontFamily: AppTheme.fontFamily,
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                           color: AppTheme.textColor(isDarkMode),
@@ -150,6 +153,7 @@ class MetricCard extends StatelessWidget {
                       Text(
                         unit,
                         style: TextStyle(
+                          fontFamily: AppTheme.fontFamily,
                           fontSize: 8,
                           color: AppTheme.textSecondaryColor(isDarkMode),
                         ),
