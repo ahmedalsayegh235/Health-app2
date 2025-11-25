@@ -17,8 +17,8 @@ U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
 PulseOximeter pox;
 
 // -------------------- Wi-Fi & MQTT --------------------
-const char* STA_SSID   = "";
-const char* STA_PASS   = "";
+const char* STA_SSID   = "/* Wi-Fi name */";
+const char* STA_PASS   = "/* Wi-Fi password */";
 const char* MQTT_HOST  = "broker.hivemq.com";
 const int   MQTT_PORT  = 1883;
 const char* MQTT_TOPIC = "esp32/health";
@@ -484,8 +484,8 @@ void taskOLED(void* parameter) {
       }
     }
 
-    if (gMode == 0) {
-      // HR/SpO2 display mode - ENHANCED DESIGN
+   if (gMode == 0) {
+      // HR/SpO2 display mode - REORGANIZED LAYOUT
       
       unsigned long elapsed = (millis() - gBootTime) / 1000;
       int hours = elapsed / 3600;
@@ -493,67 +493,74 @@ void taskOLED(void* parameter) {
       int seconds = elapsed % 60;
       
       // Header with time
-      u8g2.drawBox(0, 0, 128, 11);
+      u8g2.drawBox(0, 0, 128, 10);
       u8g2.setColorIndex(0);
       u8g2.setFont(u8g2_font_6x10_tr);
-      u8g2.setCursor(2, 9);
+      u8g2.setCursor(2, 8);
       u8g2.print("VITALS");
       
       char timeStr[10];
       sprintf(timeStr, "%02d:%02d:%02d", hours, minutes, seconds);
       int timeWidth = u8g2.getStrWidth(timeStr);
-      u8g2.setCursor(128 - timeWidth - 2, 9);
+      u8g2.setCursor(128 - timeWidth - 2, 8);
       u8g2.print(timeStr);
       
       u8g2.setColorIndex(1);
       
       if (gFingerDetected) {
-        // Heart Rate Section
-        u8g2.setFont(u8g2_font_logisoso20_tn);
+        // Heart Rate Section - Left Side
+        u8g2.setFont(u8g2_font_5x7_tr);
+        u8g2.setCursor(4, 20);
+        u8g2.print("HR");
+        
+        u8g2.setFont(u8g2_font_logisoso18_tn);
         char hrStr[5];
         sprintf(hrStr, "%d", (int)gHeartRate);
-        int hrWidth = u8g2.getStrWidth(hrStr);
-        u8g2.setCursor(10, 35);
+        u8g2.setCursor(4, 38);
         u8g2.print(hrStr);
         
         u8g2.setFont(u8g2_font_6x10_tr);
-        u8g2.setCursor(10 + hrWidth + 3, 35);
+        u8g2.setCursor(4, 47);
         u8g2.print("bpm");
         
+        // Vertical divider
+        u8g2.drawLine(63, 12, 63, 52);
+        
+        // SpO2 Section - Right Side
         u8g2.setFont(u8g2_font_5x7_tr);
-        u8g2.setCursor(10, 42);
-        u8g2.print("Heart Rate");
+        u8g2.setCursor(68, 20);
+        u8g2.print("SpO2");
         
-        u8g2.drawLine(0, 46, 128, 46);
-        
-        // SpO2 Section
-        u8g2.setFont(u8g2_font_logisoso16_tn);
+        u8g2.setFont(u8g2_font_logisoso18_tn);
         char spo2Str[5];
         sprintf(spo2Str, "%d", (int)gSpO2);
-        int spo2Width = u8g2.getStrWidth(spo2Str);
-        u8g2.setCursor(12, 62);
+        u8g2.setCursor(68, 38);
         u8g2.print(spo2Str);
         
         u8g2.setFont(u8g2_font_6x10_tr);
-        u8g2.setCursor(12 + spo2Width + 2, 62);
+        u8g2.setCursor(68, 47);
         u8g2.print("%");
         
-        u8g2.setFont(u8g2_font_5x7_tr);
-        u8g2.setCursor(12 + spo2Width + 14, 62);
-        u8g2.print("SpO2");
+        // Animated heart icon - bottom right
+        int heartX = 108;
+        int heartY = 28;
+        bool beating = gValidBeat && (millis() - gLastBeatTime < 250);
         
-        // Animated heart
-        if (gValidBeat && (millis() - gLastBeatTime < 300)) {
-          u8g2.drawBox(110, 52, 8, 8);
-          u8g2.drawBox(118, 52, 8, 8);
-          u8g2.drawBox(106, 56, 24, 6);
-          u8g2.drawTriangle(106, 62, 130, 62, 118, 64);
+        if (beating) {
+          // Filled heart when beating
+          u8g2.drawDisc(heartX, heartY, 4);
+          u8g2.drawDisc(heartX + 7, heartY, 4);
+          u8g2.drawBox(heartX - 4, heartY, 15, 5);
+          u8g2.drawTriangle(heartX - 4, heartY + 5, heartX + 10, heartY + 5, heartX + 3, heartY + 12);
         } else {
-          u8g2.drawFrame(110, 52, 8, 8);
-          u8g2.drawFrame(118, 52, 8, 8);
-          u8g2.drawFrame(106, 56, 24, 6);
-          u8g2.drawLine(106, 62, 118, 64);
-          u8g2.drawLine(130, 62, 118, 64);
+          // Outline heart when not beating
+          u8g2.drawCircle(heartX, heartY, 4);
+          u8g2.drawCircle(heartX + 7, heartY, 4);
+          u8g2.drawLine(heartX - 4, heartY, heartX - 4, heartY + 5);
+          u8g2.drawLine(heartX + 10, heartY, heartX + 10, heartY + 5);
+          u8g2.drawLine(heartX - 4, heartY + 5, heartX + 3, heartY + 12);
+          u8g2.drawLine(heartX + 10, heartY + 5, heartX + 3, heartY + 12);
+          u8g2.drawLine(heartX - 4, heartY, heartX + 10, heartY);
         }
         
       } else {
@@ -565,36 +572,37 @@ void taskOLED(void* parameter) {
         int width1 = u8g2.getStrWidth(msg1);
         int width2 = u8g2.getStrWidth(msg2);
         
-        u8g2.setCursor((128 - width1) / 2, 30);
+        u8g2.setCursor((128 - width1) / 2, 28);
         u8g2.print(msg1);
-        u8g2.setCursor((128 - width2) / 2, 45);
+        u8g2.setCursor((128 - width2) / 2, 40);
         u8g2.print(msg2);
         
-        u8g2.drawFrame(54, 50, 20, 12);
-        u8g2.drawBox(58, 52, 12, 8);
+        // Finger icon
+        u8g2.drawFrame(54, 44, 20, 8);
+        u8g2.drawBox(58, 46, 12, 4);
       }
       
-      // Bottom status bar
+      // Bottom status bar with divider line
+      u8g2.drawLine(0, 53, 128, 53);
+      
       u8g2.setFont(u8g2_font_5x7_tr);
       
-      u8g2.setCursor(2, 64);
+      u8g2.setCursor(2, 62);
       if (WiFi.status() == WL_CONNECTED) {
-        u8g2.print("WiFi");
+        u8g2.print("WiFi:OK");
       } else {
-        u8g2.print("----");
+        u8g2.print("WiFi:--");
       }
       
-      u8g2.setCursor(30, 64);
-      u8g2.print("|");
-      
-      u8g2.setCursor(35, 64);
+      u8g2.setCursor(48, 62);
       if (gMqttConnected) {
-        u8g2.print("MQTT");
+        u8g2.print("MQTT:OK");
       } else {
-        u8g2.print("----");
+        u8g2.print("MQTT:--");
       }
       
-      u8g2.setCursor(110, 64);
+      u8g2.setCursor(100, 62);
+      u8g2.print("Pwr:");
       u8g2.print(gPowerMode == 0 ? "AC" : gPowerMode == 1 ? "LS" : "DS");
       
     } else {
@@ -647,9 +655,16 @@ void taskOLED(void* parameter) {
       u8g2.print("Beats: ");
       u8g2.print(beatCount);
       
-      u8g2.setCursor(110, 64);
+
+      u8g2.setCursor(100, 64);
+      u8g2.setFont(u8g2_font_5x7_tr);
+      u8g2.print("Pwr:");
+      u8g2.print(gPowerMode == 0 ? "AC" : gPowerMode == 1 ? "LS" : "DS");
+
+      /* u8g2.setCursor(110, 64);
       u8g2.setFont(u8g2_font_5x7_tr);
       u8g2.print("AC");
+      */
     }
 
     u8g2.sendBuffer();
