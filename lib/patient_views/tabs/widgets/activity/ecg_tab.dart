@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:health/components/health_status_dialog.dart';
 import 'package:health/helpers/tab_helper.dart';
 import 'package:health/patient_views/tabs/widgets/activity/widgets/ecg/previous_reading_ecg.dart';
 import 'package:health/patient_views/tabs/widgets/activity/widgets/ecg/realtime_ecg.dart';
@@ -60,26 +61,21 @@ class _ECGTabState extends State<ECGTab> with TickerProviderStateMixin {
 
   void _toggleRecording() {
     final provider = Provider.of<SensorProvider>(context, listen: false);
-    
+
     if (provider.isEcgRecording) {
       provider.stopEcgRecording();
       _pulseController.stop();
       _pulseController.reset();
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: const [
-              Icon(Icons.check_circle, color: Colors.white),
-              SizedBox(width: 12),
-              Expanded(child: Text('ECG recording stopped')),
-            ],
-          ),
-          backgroundColor: Colors.orange,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
+
+      // Show health status dialog after a short delay to allow reading to be saved
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          final lastReading = provider.lastEcgReading;
+          if (lastReading != null) {
+            _showHealthStatusDialog(lastReading);
+          }
+        }
+      });
     } else {
       // Check if in ECG mode
       if (!provider.isEcgMode) {
@@ -124,6 +120,47 @@ class _ECGTabState extends State<ECGTab> with TickerProviderStateMixin {
         ),
       );
     }
+  }
+
+  void _showHealthStatusDialog(HealthReading reading) {
+    final ecgHeartRate = reading.value;
+    final rhythm = reading.rhythmClassification;
+
+    // Determine if medical attention is needed based on heart rate or rhythm
+    final requiresAttention = requiresECGMedicalAttention(ecgHeartRate) ||
+                               requiresECGRhythmMedicalAttention(rhythm);
+
+    final category = getECGHeartRateCategory(ecgHeartRate);
+    final riskLevel = getECGHeartRateRiskLevel(ecgHeartRate);
+    final heartRateAdvice = getECGHeartRateAdvice(ecgHeartRate);
+    final rhythmAdvice = getECGRhythmAdvice(rhythm);
+    final combinedAdvice = '$heartRateAdvice\n\nRhythm Analysis: $rhythmAdvice';
+    final statusColor = getECGHeartRateStatusColor(ecgHeartRate);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => HealthStatusDialog(
+        title: 'ECG Reading',
+        value: ecgHeartRate.toInt().toString(),
+        unit: 'bpm',
+        category: '$category | $rhythm',
+        riskLevel: riskLevel,
+        message: combinedAdvice,
+        statusColor: statusColor,
+        icon: Icons.monitor_heart,
+        requiresMedicalAttention: requiresAttention,
+        isDark: widget.isDark,
+        onBookAppointment: () {
+          Navigator.of(context).pop();
+          // Navigate to appointment tab
+          DefaultTabController.of(context).animateTo(2);
+        },
+        onDismiss: () {
+          Navigator.of(context).pop();
+        },
+      ),
+    );
   }
 
   void _showReadingDetail(HealthReading reading) {

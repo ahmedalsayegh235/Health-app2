@@ -26,32 +26,71 @@ class BmiController extends ChangeNotifier {
     return weightKg / (heightM * heightM);
   }
 
-  /// Get BMI category text
+  /// Get BMI category text based on WHO classification
   static String getBmiCategory(double bmi) {
-    if (bmi < 18.5) return 'Underweight';
-    if (bmi < 25) return 'Normal';
-    if (bmi < 30) return 'Overweight';
-    return 'Obese';
+    if (bmi < 15.0) return 'Underweight (Severe)';
+    if (bmi < 17.0) return 'Underweight (Moderate)';
+    if (bmi < 18.5) return 'Underweight (Mild)';
+    if (bmi <= 24.9) return 'Normal/Optimal';
+    if (bmi < 27.0) return 'Overweight (Grade I)';
+    if (bmi < 30.0) return 'Overweight (Grade II)';
+    if (bmi < 35.0) return 'Obese Class I';
+    if (bmi < 40.0) return 'Obese Class II';
+    return 'Obese Class III';
+  }
+
+  /// Get BMI risk level based on WHO classification
+  static String getBmiRiskLevel(double bmi) {
+    if (bmi < 15.0) return 'High';
+    if (bmi < 17.0) return 'Moderate';
+    if (bmi < 18.5) return 'Low-Moderate';
+    if (bmi <= 24.9) return 'Low';
+    if (bmi < 27.0) return 'Low-Moderate';
+    if (bmi < 30.0) return 'Moderate';
+    if (bmi < 35.0) return 'Moderate-High';
+    if (bmi < 40.0) return 'High';
+    return 'Very High';
+  }
+
+  /// Check if BMI requires medical attention
+  static bool requiresMedicalAttention(double bmi) {
+    // Based on WHO standards: severe underweight, or any obesity class
+    return bmi < 17.0 || bmi >= 30.0;
   }
 
   /// Get BMI category color
   static Color getBmiCategoryColor(double bmi) {
-    if (bmi < 18.5) return Colors.blue;
-    if (bmi < 25) return Colors.green;
-    if (bmi < 30) return Colors.orange;
-    return Colors.red;
+    if (bmi < 15.0) return Colors.red; // Severe underweight
+    if (bmi < 17.0) return Colors.orange; // Moderate underweight
+    if (bmi < 18.5) return Colors.blue; // Mild underweight
+    if (bmi <= 24.9) return Colors.green; // Normal/Optimal
+    if (bmi < 27.0) return Colors.blue; // Overweight Grade I
+    if (bmi < 30.0) return Colors.orange; // Overweight Grade II
+    if (bmi < 35.0) return Colors.deepOrange; // Obese Class I
+    if (bmi < 40.0) return Colors.red; // Obese Class II
+    return Colors.red.shade900; // Obese Class III
   }
 
   /// Get health advice based on BMI
   static String getBmiAdvice(double bmi) {
-    if (bmi < 18.5) {
-      return 'You are underweight. Consider consulting a nutritionist for a healthy weight gain plan.';
-    } else if (bmi < 25) {
-      return 'Great! You have a healthy weight. Keep maintaining your current lifestyle.';
-    } else if (bmi < 30) {
-      return 'You are slightly overweight. Consider regular exercise and a balanced diet.';
+    if (bmi < 15.0) {
+      return 'Your BMI indicates severe underweight. This requires immediate medical attention. Please consult a healthcare professional.';
+    } else if (bmi < 17.0) {
+      return 'Your BMI indicates moderate underweight. Consider consulting a nutritionist and healthcare provider for a healthy weight gain plan.';
+    } else if (bmi < 18.5) {
+      return 'You are mildly underweight. Consider consulting a nutritionist for a healthy weight gain plan.';
+    } else if (bmi <= 24.9) {
+      return 'Great! You have a healthy weight. Keep maintaining your current lifestyle with balanced nutrition and regular exercise.';
+    } else if (bmi < 27.0) {
+      return 'You are slightly overweight (Grade I). Consider regular physical activity and monitoring your diet.';
+    } else if (bmi < 30.0) {
+      return 'You are overweight (Grade II). Regular exercise and a balanced diet are recommended. Consider consulting a healthcare professional.';
+    } else if (bmi < 35.0) {
+      return 'Your BMI indicates Class I Obesity. Please consult a healthcare professional for personalized guidance on weight management.';
+    } else if (bmi < 40.0) {
+      return 'Your BMI indicates Class II Obesity. Medical consultation is strongly recommended for comprehensive weight management support.';
     } else {
-      return 'You are in the obese range. Please consult a healthcare professional for guidance.';
+      return 'Your BMI indicates Class III Obesity. Immediate medical consultation is strongly recommended for your health and wellbeing.';
     }
   }
 

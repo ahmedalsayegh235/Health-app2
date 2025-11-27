@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:health/components/custom_button.dart';
 import 'package:health/components/custom_graph.dart';
+import 'package:health/components/health_status_dialog.dart';
 import 'package:health/controllers/activities_provider.dart';
 import 'package:health/controllers/blood_sugar_controller.dart';
 import 'package:health/helpers/app_theme.dart';
@@ -117,30 +118,49 @@ class _BloodsugarTabState extends State<BloodsugarTab>
 
     if (success && mounted) {
       final category = BloodSugarController.getBloodSugarCategory(value, _selectedReadingType);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Blood sugar recorded: ${value.toStringAsFixed(1)} mg/dL - $category',
-          ),
-          backgroundColor: AppTheme.lightgreen,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
+      final riskLevel = BloodSugarController.getBloodSugarRiskLevel(value, _selectedReadingType);
+      final requiresAttention = BloodSugarController.requiresMedicalAttention(value, _selectedReadingType);
+      final statusColor = BloodSugarController.getBloodSugarCategoryColor(value, _selectedReadingType);
+      final message = BloodSugarController.getBloodSugarAdvice(value, _selectedReadingType);
+      final isDark = Provider.of<ThemeProvider>(context, listen: false).isDarkMode;
 
       // Save to activity log
       final activityProvider = context.read<ActivityProvider>();
       await activityProvider.addActivity({
         'title': 'Blood sugar recorded: ${value.toStringAsFixed(1)} mg/dL - $category',
         'icon': 'bloodtype',
-        'iconColor': BloodSugarController.getBloodSugarCategoryColor(value, _selectedReadingType).value,
+        'iconColor': statusColor.toARGB32(),
         'timestamp': DateTime.now().toIso8601String(),
       });
 
       _valueController.clear();
+
+      // Show health status dialog
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => HealthStatusDialog(
+          title: 'Blood Sugar Reading',
+          value: value.toStringAsFixed(1),
+          unit: 'mg/dL',
+          category: category,
+          riskLevel: riskLevel,
+          message: message,
+          statusColor: statusColor,
+          icon: Icons.bloodtype,
+          requiresMedicalAttention: requiresAttention,
+          isDark: isDark,
+          onBookAppointment: () {
+            Navigator.pop(context);
+            // Navigate to appointment tab
+            DefaultTabController.of(context).animateTo(2);
+          },
+          onDismiss: () {
+            Navigator.pop(context);
+          },
+        ),
+      );
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

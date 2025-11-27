@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:health/components/custom_button.dart';
 import 'package:health/components/custom_graph.dart';
+import 'package:health/components/health_status_dialog.dart';
 import 'package:health/controllers/activities_provider.dart';
 import 'package:health/helpers/app_theme.dart';
 import 'package:health/helpers/tab_helper.dart';
@@ -86,28 +87,55 @@ Future<void> _stopRecording() async {
   final lastReading = sensorProvider.lastHeartRate;
 
   if (lastReading != null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Heart Rate recorded: ${lastReading.value.toInt()} bpm',
-        ),
-        backgroundColor: AppTheme.lightgreen,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-    );
+    final heartRateValue = lastReading.value;
 
+    // Save activity
     final newActivity = {
-  'title': 'Heart rate measured: ${lastReading.value.toInt()} bpm',
-  'icon': "heart",            // will map to Icons.favorite
-  'iconColor': 0xFFF44336,    // red
+      'title': 'Heart rate measured: ${heartRateValue.toInt()} bpm',
+      'icon': "heart",
+      'iconColor': 0xFFF44336,
     };
-    // Save using ActivityProvider
     final activityProvider = context.read<ActivityProvider>();
     await activityProvider.addActivity(newActivity);
+
+    // Show health status dialog
+    if (mounted) {
+      _showHealthStatusDialog(heartRateValue);
+    }
   }
+}
+
+void _showHealthStatusDialog(double heartRateValue) {
+  final category = getHeartRateCategory(heartRateValue);
+  final riskLevel = getHeartRateRiskLevel(heartRateValue);
+  final advice = getHeartRateAdvice(heartRateValue);
+  final statusColor = getHeartStatusColor(heartRateValue);
+  final requiresAttention = requiresHeartRateMedicalAttention(heartRateValue);
+
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => HealthStatusDialog(
+      title: 'Heart Rate Reading',
+      value: heartRateValue.toInt().toString(),
+      unit: 'bpm',
+      category: category,
+      riskLevel: riskLevel,
+      message: advice,
+      statusColor: statusColor,
+      icon: Icons.favorite,
+      requiresMedicalAttention: requiresAttention,
+      isDark: widget.isDark,
+      onBookAppointment: () {
+        Navigator.of(context).pop();
+        // Navigate to appointment tab
+        DefaultTabController.of(context).animateTo(2); // Assuming appointments is at index 2
+      },
+      onDismiss: () {
+        Navigator.of(context).pop();
+      },
+    ),
+  );
 }
 
 

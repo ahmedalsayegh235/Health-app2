@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:health/components/custom_button.dart';
 import 'package:health/components/custom_graph.dart';
+import 'package:health/components/health_status_dialog.dart';
 import 'package:health/controllers/activities_provider.dart';
 import 'package:health/controllers/BMI_controller.dart';
 import 'package:health/helpers/app_theme.dart';
@@ -120,31 +121,50 @@ class _BmiTabState extends State<BmiTab>
     if (success && mounted) {
       final bmi = BmiController.calculateBmi(weight, height);
       final category = BmiController.getBmiCategory(bmi);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'BMI recorded: ${bmi.toStringAsFixed(1)} - $category',
-          ),
-          backgroundColor: AppTheme.lightgreen,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
+      final riskLevel = BmiController.getBmiRiskLevel(bmi);
+      final requiresAttention = BmiController.requiresMedicalAttention(bmi);
+      final statusColor = BmiController.getBmiCategoryColor(bmi);
+      final message = BmiController.getBmiAdvice(bmi);
+      final isDark = Provider.of<ThemeProvider>(context, listen: false).isDarkMode;
 
       // Save to activity log
       final activityProvider = context.read<ActivityProvider>();
       await activityProvider.addActivity({
         'title': 'BMI recorded: ${bmi.toStringAsFixed(1)} - $category',
         'icon': 'scale',
-        'iconColor': BmiController.getBmiCategoryColor(bmi).value,
+        'iconColor': statusColor.toARGB32(),
         'timestamp': DateTime.now().toIso8601String(),
       });
 
       _weightController.clear();
       _heightController.clear();
+
+      // Show health status dialog
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => HealthStatusDialog(
+          title: 'BMI Reading',
+          value: bmi.toStringAsFixed(1),
+          unit: 'kg/m²',
+          category: category,
+          riskLevel: riskLevel,
+          message: message,
+          statusColor: statusColor,
+          icon: Icons.monitor_weight,
+          requiresMedicalAttention: requiresAttention,
+          isDark: isDark,
+          onBookAppointment: () {
+            Navigator.pop(context);
+            // Navigate to appointment tab
+            DefaultTabController.of(context).animateTo(2);
+          },
+          onDismiss: () {
+            Navigator.pop(context);
+          },
+        ),
+      );
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

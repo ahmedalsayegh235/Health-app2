@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:health/components/custom_button.dart';
 import 'package:health/components/custom_graph.dart';
+import 'package:health/components/health_status_dialog.dart';
 import 'package:health/controllers/activities_provider.dart';
 import 'package:health/helpers/app_theme.dart';
 import 'package:health/helpers/tab_helper.dart';
@@ -91,29 +92,55 @@ class _SpO2TabState extends State<SpO2Tab> with SingleTickerProviderStateMixin {
     final lastReading = sensorProvider.lastSpo2;
 
     if (lastReading != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('SpO2 recorded: ${lastReading.value.toInt()}%'),
-          backgroundColor: Colors.blue,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
-      
+      final spo2Value = lastReading.value;
+
+      // Save activity
       final newActivity = {
-      'title': 'SPO2 measured: ${lastReading.value.toInt()} %',
-      'icon': "spo2",            // will map to Icons.favorite
-      'iconColor': 0xFF2196F3,    // blue
-        };
+        'title': 'SPO2 measured: ${spo2Value.toInt()} %',
+        'icon': "spo2",
+        'iconColor': 0xFF2196F3,
+      };
+      final activityProvider = context.read<ActivityProvider>();
+      await activityProvider.addActivity(newActivity);
 
+      // Show health status dialog
+      if (mounted) {
+        _showHealthStatusDialog(spo2Value);
+      }
+    }
+  }
 
-        // Save using ActivityProvider
-        final activityProvider = context.read<ActivityProvider>();
-        await activityProvider.addActivity(newActivity);
+  void _showHealthStatusDialog(double spo2Value) {
+    final category = getSPo2Category(spo2Value);
+    final riskLevel = getSPo2RiskLevel(spo2Value);
+    final advice = getSPo2Advice(spo2Value);
+    final statusColor = getSPo2StatusColor(spo2Value);
+    final requiresAttention = requiresSPo2MedicalAttention(spo2Value);
 
-        }
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => HealthStatusDialog(
+        title: 'SpO2 Reading',
+        value: spo2Value.toInt().toString(),
+        unit: '%',
+        category: category,
+        riskLevel: riskLevel,
+        message: advice,
+        statusColor: statusColor,
+        icon: Icons.air,
+        requiresMedicalAttention: requiresAttention,
+        isDark: widget.isDark,
+        onBookAppointment: () {
+          Navigator.of(context).pop();
+          // Navigate to appointment tab
+          DefaultTabController.of(context).animateTo(2);
+        },
+        onDismiss: () {
+          Navigator.of(context).pop();
+        },
+      ),
+    );
   }
 
   void _showReadingDetail(HealthReading reading) {

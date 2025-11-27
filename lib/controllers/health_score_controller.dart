@@ -3,13 +3,6 @@ import 'package:health/controllers/BMI_controller.dart';
 import 'package:health/controllers/sensor_provider.dart';
 import 'package:health/controllers/blood_sugar_controller.dart';
 
-/// these are the referenced equations we used in calculating the health score
-/// References:
-/// - WHO (2000) BMI Classification
-/// - American Heart Association (2024) Heart Rate Guidelines
-/// - WHO (2011) SpO2 Pulse Oximetry Training Manual
-/// - American Diabetes Association (2025) Blood Glucose Standards
-/// - Seeman et al. (1997) Allostatic Load Methodology
 class HealthScoreProvider extends ChangeNotifier {
   final BmiController bmiController;
   final SensorProvider sensorProvider;
@@ -29,11 +22,11 @@ class HealthScoreProvider extends ChangeNotifier {
 
   /// this is the referenced weights used in the research
   static const Map<String, double> _componentWeights = {
-    'bmi': 0.20,           // Metabolic health indicator (WHO, 2000)
-    'heartRate': 0.20,     // Cardiovascular function (AHA, 2024)
-    'spo2': 0.25,          // Critical respiratory marker (WHO, 2011)
-    'bloodSugar': 0.20,    // Metabolic/diabetes risk (ADA, 2025)
-    'ecgHeartRate': 0.15,  // Cardiac rhythm accuracy bonus
+    'bmi': 0.20,          
+    'heartRate': 0.20, 
+    'spo2': 0.25,          
+    'bloodSugar': 0.20,
+    'ecgHeartRate': 0.15,  
   };
 
   // Track last reading IDs to detect changes
