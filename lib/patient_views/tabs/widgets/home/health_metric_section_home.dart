@@ -275,23 +275,6 @@ Expanded(
   ),
 ),
 
-            const SizedBox(width: 12),
-            Expanded(
-              child: MetricCard(
-                icon: Icons.directions_walk,
-                iconColor: Colors.teal,
-                title: "Steps/Day",
-                value: 7500,
-                previousValue: 6800,
-                unit: "steps",
-                isDarkMode: isDarkMode,
-                animationController: AnimationController(
-                  vsync: vsync,
-                  duration: const Duration(milliseconds: 150),
-                ),
-                onTap: () {},
-              ),
-            ),
           ],
         ),
       ],
