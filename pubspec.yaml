@@ -22,12 +22,24 @@ dependencies:
   mqtt_client: ^10.11.0
   intl: ^0.20.2
   shared_preferences: ^2.5.3
+  flutter_launcher_icons: ^0.14.4
   
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/ic_launcher_foreground.png"
+  adaptive_icon_path: "assets/images/ic_launcher_foreground.png"
+  image_path_ios: "assets/images/play_store_512.png"
+  remove_alpha_ios: true
+  adaptive_icon_background: "#011031"
+  adaptive_icon_foreground: "assets/images/ic_launcher_foreground.png"
+  adaptive_icon_padding: false
 
 flutter:
   uses-material-design: true
