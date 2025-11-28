@@ -51,33 +51,35 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
   }
 
   Future<void> _signUp() async {
-  setState(() {
-    _isLoading = true;
-    _errorMessage = null;
-  });
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
 
-  try {
-    final user = await _authController.signUp(
-      email: _emailController.text.trim(),
-      password: _passwordController.text.trim(),
-      confirmPassword: _confirmPasswordController.text.trim(),
-      name: _nameController.text.trim(),
-      cpr: _cprController.text.trim(),
-      gender: _selectedGender,
-    );
+    try {
+      final user = await _authController.signUp(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+        confirmPassword: _confirmPasswordController.text.trim(),
+        name: _nameController.text.trim(),
+        cpr: _cprController.text.trim(),
+        gender: _selectedGender,
+      );
 
-    if (user != null) {
-      // Start exit animation before navigating to home
-      await _authAnimationController.exitController.forward();
-      Navigator.pushReplacementNamed(context, 'home');
+      if (user != null) {
+        // Start exit animation before navigating to home
+        await _authAnimationController.exitController.forward();
+        Navigator.pushReplacementNamed(context, 'home');
+      }
+    } catch (e) {
+      // Display validation or Firebase errors
+      setState(
+        () => _errorMessage = e.toString().replaceAll("Exception: ", ""),
+      );
+    } finally {
+      setState(() => _isLoading = false);
     }
-  } catch (e) {
-    // Display validation or Firebase errors
-    setState(() => _errorMessage = e.toString().replaceAll("Exception: ", ""));
-  } finally {
-    setState(() => _isLoading = false);
   }
-}
 
   void _toggleTheme() {
     Provider.of<ThemeProvider>(context, listen: false).toggleTheme();
@@ -162,11 +164,11 @@ class _SignUpPageState extends State<SignUpPage> with TickerProviderStateMixin {
               ),
               CustomDropdownFormField<String>(
                 value: _selectedGender,
-                items: ["Male", "Female", "Other"]
-                    .map((gender) => DropdownMenuItem(
-                          value: gender,
-                          child: Text(gender),
-                        ))
+                items: ["Male", "Female"]
+                    .map(
+                      (gender) =>
+                          DropdownMenuItem(value: gender, child: Text(gender)),
+                    )
                     .toList(),
                 onChanged: (val) => setState(() => _selectedGender = val!),
                 hintText: "Gender",
